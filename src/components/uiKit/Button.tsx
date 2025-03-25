@@ -9,6 +9,7 @@ interface ButtonProps {
   variant?: "primary" | "secondary" | "outline" | "noArrow" | "noArrow2";
   className?: string;
   hideArrow?: boolean;
+  disabled?: boolean;
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
@@ -18,10 +19,11 @@ const Button = ({
   variant = "primary",
   className = "",
   hideArrow = false,
+  disabled = false,
   onClick,
 }: ButtonProps) => {
   const baseStyles =
-    "inline-flex items-center gap-2 whitespace-nowrap font-semibold roboto-condensed-semibold group text-sm  flex justify-center items-center";
+    "inline-flex items-center gap-2 whitespace-nowrap font-semibold roboto-condensed-semibold group text-sm flex justify-center items-center";
 
   const variantStyles = {
     primary:
@@ -36,6 +38,8 @@ const Button = ({
       "h-[42px] px-10 font-medium text-sm leading-tight bg-[#38AE34] text-white text-center border border-[#38AE34] roboto-condensed-medium hover:bg-transparent hover:text-[#38AE34]",
   };
 
+  const disabledStyles = "opacity-50 cursor-not-allowed hover:bg-[#38AE34] hover:text-white hover:border-transparent";
+
   const renderArrows = () => {
     if (hideArrow || variant === "noArrow" || variant === "noArrow2")
       return null;
@@ -48,7 +52,7 @@ const Button = ({
           width={16}
           height={16}
           className={`inline-block w-4 h-4 ${
-            variant === "primary" ? "group-hover:hidden" : ""
+            variant === "primary" && !disabled ? "group-hover:hidden" : ""
           }`}
         />
         <Image
@@ -57,15 +61,15 @@ const Button = ({
           width={16}
           height={16}
           className={`${
-            variant === "primary" ? "hidden group-hover:inline-block" : "hidden"
+            variant === "primary" && !disabled ? "hidden group-hover:inline-block" : "hidden"
           }`}
         />
       </>
     );
   };
 
-  // If href is provided, render as Link
-  if (href) {
+  // If href is provided and button is not disabled, render as Link
+  if (href && !disabled) {
     return (
       <Link
         href={href}
@@ -77,12 +81,26 @@ const Button = ({
     );
   }
 
+  // If href is provided but button is disabled, render as button that looks like a link but doesn't navigate
+  if (href && disabled) {
+    return (
+      <button
+        disabled={true}
+        className={`${baseStyles} ${variantStyles[variant]} ${disabledStyles} ${className}`}
+      >
+        {label}
+        {renderArrows()}
+      </button>
+    );
+  }
+
   // Otherwise render as button
   return (
     <button
       onClick={onClick}
-      type="button"
-      className={`${baseStyles} ${variantStyles[variant]} ${className}`}
+      type="submit"
+      disabled={disabled}
+      className={`${baseStyles} ${variantStyles[variant]} ${disabled ? disabledStyles : ''} ${className}`}
     >
       {label}
       {renderArrows()}
