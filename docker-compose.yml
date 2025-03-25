@@ -14,8 +14,8 @@ services:
     image: nginx:alpine
     restart: always
     ports:
-      - '8080:80'
-      - '8443:443'
+      - '8090:80'
+      - '8453:443'
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d
       - ./nginx/certbot/conf:/etc/letsencrypt

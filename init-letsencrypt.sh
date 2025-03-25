@@ -23,11 +23,19 @@ openssl req -x509 -nodes -newkey rsa:$rsa_key_size -days 1 \
 # Запускаем контейнеры для получения сертификатов
 docker-compose up -d nginx
 
-# Запрашиваем сертификаты через внешний certbot
-echo "Получение сертификатов через внешний certbot..."
-echo "Запускайте на сервере certbot вручную после настройки DNS и открытия портов"
-echo "Пример команды:"
-echo "certbot certonly --webroot -w /var/www/certbot -d hettautomotive.ru -d www.hettautomotive.ru"
+# Информация для получения сертификатов
+echo "============================================================="
+echo "Приложение запущено на портах 8090 (HTTP) и 8453 (HTTPS)"
+echo "Для получения сертификатов используйте внешний certbot"
+echo
+echo "1. Настройте основной Nginx для проксирования запросов:"
+echo "   - Создайте /etc/nginx/sites-available/hettautomotive.ru.conf"
+echo "   - Создайте символическую ссылку"
+echo "   - Перезапустите Nginx"
+echo
+echo "2. Запустите certbot для получения сертификатов:"
+echo "   certbot --nginx -d hettautomotive.ru -d www.hettautomotive.ru"
+echo "============================================================="
 
 # Перезапускаем NGINX для применения новых сертификатов
 docker-compose restart nginx

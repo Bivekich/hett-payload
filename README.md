@@ -37,6 +37,10 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## Развертывание на сервере с помощью Docker
 
+### Важная информация
+
+Приложение настроено для работы на портах 8090 (HTTP) и 8453 (HTTPS) вместо стандартных 80 и 443, поскольку эти порты могут быть уже заняты другими службами на сервере.
+
 Для развертывания сайта на сервере с помощью Docker выполните следующие шаги:
 
 1. Клонируйте репозиторий на сервер:
@@ -59,7 +63,56 @@ chmod +x init-letsencrypt.sh
 docker-compose up -d --build
 ```
 
-После этого сайт будет доступен по адресу https://hettautomotive.ru.
+### Настройка основного Nginx на сервере
+
+Если на сервере уже запущен Nginx, вам необходимо создать конфигурацию для проксирования запросов на порты докер-контейнера:
+
+1. Создайте файл конфигурации:
+
+```bash
+nano /etc/nginx/sites-available/hettautomotive.ru.conf
+```
+
+2. Добавьте следующую конфигурацию:
+
+```
+server {
+    listen 80;
+    server_name hettautomotive.ru www.hettautomotive.ru;
+
+    location / {
+        proxy_pass http://localhost:8090;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name hettautomotive.ru www.hettautomotive.ru;
+
+    ssl_certificate /etc/letsencrypt/live/hettautomotive.ru/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/hettautomotive.ru/privkey.pem;
+
+    location / {
+        proxy_pass https://localhost:8453;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+3. Создайте символическую ссылку и перезапустите Nginx:
+
+```bash
+ln -s /etc/nginx/sites-available/hettautomotive.ru.conf /etc/nginx/sites-enabled/
+nginx -t
+systemctl restart nginx
+```
 
 ### Обновление проекта
 
