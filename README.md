@@ -97,7 +97,7 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/hettautomotive.ru/privkey.pem;
 
     location / {
-        proxy_pass https://localhost:8453;
+        proxy_pass http://localhost:8090;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
