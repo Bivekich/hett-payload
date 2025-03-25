@@ -1,0 +1,129 @@
+"use client";
+
+import React from "react";
+import { motion } from "framer-motion";
+import Button from "./Button";
+import Image from "next/image";
+import noItemImage from "@/assets/noItem.png";
+
+// Product attribute interfaces
+interface ProductAttributes {
+  name: string;
+  article: string;
+  oem: string;
+  brand: string;
+  model: string;
+  slug: string;
+  image?: {
+    data?: {
+      attributes?: {
+        url?: string;
+      };
+    };
+  };
+}
+
+interface Product {
+  id: number;
+  attributes: ProductAttributes;
+}
+
+interface ProductCardProps {
+  product: Product;
+}
+
+interface ProductDetailsProps {
+  oemNumber: string;
+  brand: string;
+  model: string;
+}
+
+// ProductDetails component for displaying OEM, brand, and model information
+const ProductDetails: React.FC<ProductDetailsProps> = ({
+  oemNumber,
+  brand,
+  model,
+}) => {
+  return (
+    <div className="flex justify-between w-full text-sm font-[Roboto_Condensed]">
+      <div className="flex-1 shrink basis-0 text-[#181818]">
+        OEM №<br />
+        Марка авто
+        <br />
+        Модель
+      </div>
+      <div className="flex-1 shrink basis-0 text-[#181818]">
+        {oemNumber}
+        <br />
+        {brand}
+        <br />
+        {model}
+      </div>
+    </div>
+  );
+};
+
+const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const { name, article, oem, brand, model, slug } = product.attributes;
+
+  // Extract the image URL from the product data structure
+  const imageUrl = product?.attributes?.image?.data?.attributes?.url;
+
+  // Check if the image URL is from a placeholder service, in which case we'll use noItem.png
+  const isPlaceholderImage = imageUrl?.includes("placehold.co");
+
+  // Only use the actual image URL if it exists and is not a placeholder
+  const hasRealImage = imageUrl && !isPlaceholderImage;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="bg-white rounded-none overflow-hidden cursor-pointer hover:shadow-md transition-all flex flex-col h-full"
+    >
+      <div className="flex items-center justify-center pt-5">
+        {hasRealImage ? (
+          <Image
+            src={imageUrl}
+            alt={name}
+            width={250}
+            height={200}
+            className="max-h-full object-contain w-auto h-auto"
+          />
+        ) : (
+          <div className="flex items-center justify-center">
+            <Image
+              src={noItemImage}
+              alt="No image available"
+              width={250}
+              height={200}
+              className="object-contain"
+            />
+          </div>
+        )}
+      </div>
+      <div className="p-6 flex flex-col gap-6 flex-grow">
+        <div className="flex flex-col gap-1">
+          <h3 className="text-base font-extrabold font-[Roboto_Condensed] text-[#181818] line-clamp-2">
+            {name}
+          </h3>
+          <div className="text-xs text-[#8898A4] my-2 font-[Roboto_Condensed]">
+            Артикул: {article || "Н/Д"}
+          </div>
+          <ProductDetails oemNumber={oem} brand={brand} model={model} />
+        </div>
+        <div className="mt-auto">
+          <Button
+            label="Подробнее о товаре"
+            href={`/catalog/product/${slug}`}
+            variant="primary"
+            className="w-full font-[Roboto_Condensed]"
+          />
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+export default ProductCard;
