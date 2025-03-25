@@ -23,16 +23,11 @@ openssl req -x509 -nodes -newkey rsa:$rsa_key_size -days 1 \
 # Запускаем контейнеры для получения сертификатов
 docker-compose up -d nginx
 
-# Запрашиваем сертификаты
-for domain in "${domains[@]}"; do
-  docker-compose run --rm certbot certonly --webroot \
-    --webroot-path=/var/www/certbot \
-    --email $email \
-    --agree-tos \
-    --no-eff-email \
-    ${staging:+"--staging"} \
-    -d $domain
-done
+# Запрашиваем сертификаты через внешний certbot
+echo "Получение сертификатов через внешний certbot..."
+echo "Запускайте на сервере certbot вручную после настройки DNS и открытия портов"
+echo "Пример команды:"
+echo "certbot certonly --webroot -w /var/www/certbot -d hettautomotive.ru -d www.hettautomotive.ru"
 
 # Перезапускаем NGINX для применения новых сертификатов
 docker-compose restart nginx
