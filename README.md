@@ -34,3 +34,50 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Развертывание на сервере с помощью Docker
+
+Для развертывания сайта на сервере с помощью Docker выполните следующие шаги:
+
+1. Клонируйте репозиторий на сервер:
+
+```bash
+git clone <url-репозитория> /path/to/project
+cd /path/to/project
+```
+
+2. Инициализируйте SSL-сертификаты для домена:
+
+```bash
+chmod +x init-letsencrypt.sh
+./init-letsencrypt.sh
+```
+
+3. Запустите контейнеры одной командой:
+
+```bash
+docker-compose up -d --build
+```
+
+После этого сайт будет доступен по адресу https://hettautomotive.ru.
+
+### Обновление проекта
+
+Для обновления проекта выполните:
+
+```bash
+git pull
+docker-compose up -d --build
+```
+
+### Просмотр логов
+
+```bash
+docker-compose logs -f
+```
+
+Для просмотра логов только frontend-сервиса:
+
+```bash
+docker-compose logs -f frontend
+```
