@@ -7,6 +7,32 @@ export interface ProductImage {
   };
 }
 
+// Marketplace link interfaces
+export interface MarketplaceLink {
+  name: string;
+  url: string;
+  logo?: string;
+}
+
+export interface MarketplaceLinks {
+  ozon?: string;
+  wildberries?: string;
+  others?: MarketplaceLink[];
+}
+
+// Distributor interface
+export interface Distributor {
+  name: string;
+  url: string;
+  location?: string;
+}
+
+// Specification interface
+export interface Specification {
+  name: string;
+  value: string;
+}
+
 export interface ProductAttributes {
   name: string;
   slug: string;
@@ -17,6 +43,10 @@ export interface ProductAttributes {
   modification: string;
   oem: string;
   image?: ProductImage;
+  description?: string;
+  specifications?: Specification[];
+  marketplaceLinks?: MarketplaceLinks;
+  distributors?: Distributor[];
 }
 
 export interface Product {

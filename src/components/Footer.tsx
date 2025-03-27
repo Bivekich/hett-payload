@@ -6,6 +6,8 @@ import Image from "next/image";
 import Container from "./Container";
 import logo from "@/assets/HettWhiteLogo.svg";
 import { getCustomPages, getSettings } from "@/services/api";
+import { getCategories } from "@/services/catalogApi";
+import { Category } from "@/types/catalog";
 
 // Define an interface for social media links
 interface SocialLink {
@@ -33,13 +35,7 @@ interface FooterData {
 
 export default function Footer() {
   const [footerData, setFooterData] = useState<FooterData | null>(null);
-  const [categories, setCategories] = useState<
-    Array<{
-      id: number;
-      name: string;
-      slug: string;
-    }>
-  >([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [customPages, setCustomPages] = useState<Array<{
     id: number;
     title: string;
@@ -94,16 +90,17 @@ export default function Footer() {
           });
         }
 
-        // For now, we'll keep using mock data for categories
-        // In a real implementation, these would come from the API
-        setCategories([
-          { id: 1, name: "Категория 1", slug: "category-1" },
-          { id: 2, name: "Категория 2", slug: "category-2" },
-          { id: 3, name: "Категория 3", slug: "category-3" },
-          { id: 4, name: "Категория 4", slug: "category-4" },
-          { id: 5, name: "Категория 5", slug: "category-5" },
-          { id: 6, name: "Категория 6", slug: "category-6" },
-        ]);
+        // Fetch real categories from the API
+        try {
+          const categoriesResponse = await getCategories({
+            limit: 10, // Limit to 10 categories for the footer
+            sort: "name" // Sort alphabetically by name
+          });
+          setCategories(categoriesResponse.docs);
+        } catch (err) {
+          console.error("Error fetching categories:", err);
+          setCategories([]);
+        }
 
         // Fetch custom pages
         try {
@@ -177,7 +174,7 @@ export default function Footer() {
             <div className="flex gap-4 sm:gap-6 md:gap-8 items-center self-stretch my-auto text-[16px] font-bold leading-relaxed text-white uppercase">
               <a
                 href={`tel:${footerData?.headerPhone || "+7 (495) 260 20 60"}`}
-                className="self-stretch my-auto hover:text-hett-1 transition-colors cursor-pointer whitespace-nowrap"
+                className="self-stretch my-auto hover:text-[#38AE34] transition-colors cursor-pointer whitespace-nowrap"
               >
                 {footerData.headerPhone}
               </a>
@@ -188,7 +185,7 @@ export default function Footer() {
                     href={telegramLink.startsWith("http") ? telegramLink : `https://${telegramLink}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:scale-110 transition-transform"
+                    className="hover:scale-110 hover:text-[#38AE34] transition-all"
                   >
                     <Image
                       src={getSocialIcon("telegram")}
@@ -204,7 +201,7 @@ export default function Footer() {
                     href={whatsappLink.startsWith("http") ? whatsappLink : `https://${whatsappLink}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:scale-110 transition-transform"
+                    className="hover:scale-110 hover:text-[#38AE34] transition-all"
                   >
                     <Image
                       src={getSocialIcon("whatsapp")}
@@ -248,15 +245,15 @@ export default function Footer() {
                     <Link
                       key={category.id}
                       href={`/catalog/${category.slug}`}
-                      className="hover:text-hett-1 transition-colors cursor-pointer"
-                      onClick={() => handleNavigation()}
+                      className="hover:text-[#38AE34] transition-colors cursor-pointer"
+                      onClick={handleNavigation}
                     >
                       {category.name}
                     </Link>
                   ))}
                 </nav>
 
-                {/* Second column (next 4 categories) */}
+                {/* Second column if more than 4 categories */}
                 {categories.length > 4 && (
                   <nav
                     className="flex flex-col gap-y-3 md:gap-y-4 w-full leading-snug text-gray-400
@@ -266,12 +263,12 @@ export default function Footer() {
                   md:text-sm
                   max-md:text-xs roboto-condensed-regular"
                   >
-                    {categories.slice(4, 8).map((category) => (
+                    {categories.slice(4).map((category) => (
                       <Link
                         key={category.id}
                         href={`/catalog/${category.slug}`}
-                        className="hover:text-hett-1 transition-colors cursor-pointer"
-                        onClick={() => handleNavigation()}
+                        className="hover:text-[#38AE34] transition-colors cursor-pointer"
+                        onClick={handleNavigation}
                       >
                         {category.name}
                       </Link>
@@ -289,7 +286,7 @@ export default function Footer() {
               <nav className="flex flex-col mt-6 md:mt-8 w-full text-sm sm:text-base leading-snug text-gray-400 roboto-condensed-regular">
                 <Link
                   href="/about"
-                  className="hover:text-hett-1 transition-colors cursor-pointer"
+                  className="hover:text-[#38AE34] transition-colors cursor-pointer"
                   onClick={() => handleNavigation()}
                 >
                   О компании Hett Automotive
@@ -300,7 +297,7 @@ export default function Footer() {
                   <Link
                     key={page.id}
                     href={`/pages/${page.slug}`}
-                    className="mt-3 md:mt-4 hover:text-hett-1 transition-colors cursor-pointer"
+                    className="mt-3 md:mt-4 hover:text-[#38AE34] transition-colors cursor-pointer"
                     onClick={() => handleNavigation()}
                   >
                     {page.title}
@@ -309,14 +306,14 @@ export default function Footer() {
                 
                 <Link
                   href="/news"
-                  className="mt-3 md:mt-4 hover:text-hett-1 transition-colors cursor-pointer"
+                  className="mt-3 md:mt-4 hover:text-[#38AE34] transition-colors cursor-pointer"
                   onClick={() => handleNavigation()}
                 >
                   Новости
                 </Link>
                 <Link
                   href="/contact"
-                  className="mt-3 md:mt-4 hover:text-hett-1 transition-colors cursor-pointer"
+                  className="mt-3 md:mt-4 hover:text-[#38AE34] transition-colors cursor-pointer"
                   onClick={() => handleNavigation()}
                 >
                   Контактная информация
@@ -329,7 +326,7 @@ export default function Footer() {
               <div className="flex flex-col justify-center w-full leading-tight">
                 <a
                   href={`tel:${footerData?.phone || "+7 (495) 260 20 60"}`}
-                  className="text-gray-400 hover:text-hett-1 transition-colors cursor-pointer
+                  className="text-gray-400 hover:text-[#38AE34] transition-colors cursor-pointer
                   2xl:text-xl
                   xl:text-lg
                   lg:text-base
@@ -352,7 +349,7 @@ export default function Footer() {
               <div className="flex flex-col justify-center mt-6 md:mt-10 w-full leading-tight whitespace-nowrap">
                 <a
                   href={`mailto:${footerData.email}`}
-                  className="text-[16px] font-semibold text-gray-400 hover:text-hett-1 transition-colors cursor-pointer roboto-condensed-semibold"
+                  className="text-[16px] font-semibold text-gray-400 hover:text-[#38AE34] transition-colors cursor-pointer roboto-condensed-semibold"
                 >
                   {footerData.email}
                 </a>
@@ -361,7 +358,7 @@ export default function Footer() {
                 </div>
               </div>
               <address className="flex flex-col justify-center mt-6 md:mt-10 w-full not-italic">
-                <div className="text-[16px] font-semibold leading-7 sm:leading-8 text-gray-400 hover:text-hett-1 transition-colors cursor-pointer roboto-condensed-semibold">
+                <div className="text-[16px] font-semibold leading-7 sm:leading-8 text-gray-400 hover:text-[#38AE34] transition-colors cursor-pointer roboto-condensed-semibold">
                   {footerData.address}
                 </div>
                 {footerData.addressLabel && (
@@ -375,19 +372,19 @@ export default function Footer() {
 
           {/* Footer Bottom */}
           <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 md:gap-10 justify-between items-start sm:items-center pt-8 mt-8 w-full text-sm sm:text-base leading-relaxed text-gray-400 border-t border-gray-700">
-            <div className="w-full sm:w-auto hover:text-gray-300 transition-colors roboto-condensed-regular">
+            <div className="w-full sm:w-auto hover:text-[#38AE34] transition-colors roboto-condensed-regular">
               {footerData.copyright}
             </div>
             <nav className="flex flex-col sm:flex-row gap-4 sm:gap-6 md:gap-10 items-start sm:items-center roboto-condensed-regular">
               <Link
                 href={footerData.termsOfUseLink || "/terms"}
-                className="hover:text-hett-1 transition-colors"
+                className="hover:text-[#38AE34] transition-colors"
               >
                 {footerData.termsOfUse}
               </Link>
               <Link
                 href={footerData.privacyPolicyLink || "/privacy"}
-                className="hover:text-hett-1 transition-colors"
+                className="hover:text-[#38AE34] transition-colors"
               >
                 {footerData.privacyPolicy}
               </Link>

@@ -40,8 +40,17 @@ const ArticleContent: React.FC<ArticleContentProps> = ({ contentSections }) => {
       font-family: 'Roboto Condensed', sans-serif;
       font-weight: 700;
       color: #1E1E1E;
+      margin-top: 1.5rem;
       margin-bottom: 1rem;
-      margin-top: 2rem;
+    }
+    
+    .rich-text-content h1:first-child,
+    .rich-text-content h2:first-child,
+    .rich-text-content h3:first-child,
+    .rich-text-content h4:first-child,
+    .rich-text-content h5:first-child,
+    .rich-text-content h6:first-child {
+      margin-top: 0;
     }
     
     .rich-text-content h1 {
@@ -78,10 +87,20 @@ const ArticleContent: React.FC<ArticleContentProps> = ({ contentSections }) => {
       color: #1E1E1E;
     }
     
+    .rich-text-content p:last-child {
+      margin-bottom: 0;
+    }
+    
     .rich-text-content ul, 
     .rich-text-content ol {
       margin-left: 1.5rem;
       margin-bottom: 1.5rem;
+      padding-left: 0;
+    }
+
+    .rich-text-content ul:last-child, 
+    .rich-text-content ol:last-child {
+      margin-bottom: 0;
     }
     
     .rich-text-content li {
@@ -91,6 +110,10 @@ const ArticleContent: React.FC<ArticleContentProps> = ({ contentSections }) => {
       font-family: 'Roboto Condensed', sans-serif;
     }
     
+    .rich-text-content li:last-child {
+      margin-bottom: 0;
+    }
+    
     .rich-text-content blockquote {
       border-left: 4px solid #38AE34;
       padding-left: 1rem;
@@ -98,6 +121,10 @@ const ArticleContent: React.FC<ArticleContentProps> = ({ contentSections }) => {
       margin-right: 0;
       margin-bottom: 1.5rem;
       font-style: italic;
+    }
+    
+    .rich-text-content blockquote:last-child {
+      margin-bottom: 0;
     }
     
     .rich-text-content blockquote p {
@@ -119,6 +146,15 @@ const ArticleContent: React.FC<ArticleContentProps> = ({ contentSections }) => {
     
     .rich-text-content em {
       font-style: italic;
+    }
+    
+    /* Fix spaces between elements */
+    .rich-text-content > *:first-child {
+      margin-top: 0;
+    }
+    
+    .rich-text-content > *:last-child {
+      margin-bottom: 0;
     }
   `;
 

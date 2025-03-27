@@ -13,20 +13,16 @@ import React from "react";
 import CatalogDropdownMenu from "./CatalogDropdownMenu";
 import VinRequestModal from "./uiKit/VinRequestModal";
 import { getCustomPages, getSettings } from "@/services/api";
+import { getCategories, searchCatalog } from "@/services/catalogApi";
+import { Category, Product } from "@/types/catalog";
+import { useRouter } from "next/navigation";
+import { API_URL } from "@/services/api";
 
 interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
   customPages: { id: number; title: string; slug: string }[];
-}
-
-interface Product {
-  id: number;
-  name: string;
-  article?: string;
-  slug: string;
-  brand?: string;
-  model?: string;
+  categories: Category[];
 }
 
 interface FooterData {
@@ -76,7 +72,7 @@ interface SiteSettings {
   };
 }
 
-function MobileMenu({ isOpen, onClose, customPages }: MobileMenuProps) {
+function MobileMenu({ isOpen, onClose, customPages, categories }: MobileMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [showCatalogSubmenu, setShowCatalogSubmenu] = useState(false);
   const [showAboutSubmenu, setShowAboutSubmenu] = useState(false);
@@ -92,35 +88,6 @@ function MobileMenu({ isOpen, onClose, customPages }: MobileMenuProps) {
   const toggleAboutSubmenu = () => {
     setShowAboutSubmenu(!showAboutSubmenu);
   };
-
-  // Import catalog categories from the CatalogDropdownMenu component
-  const catalogCategories = [
-    {
-      id: 1,
-      name: "Аккумуляторы",
-      slug: "batteries",
-    },
-    {
-      id: 2,
-      name: "Кузовные элементы",
-      slug: "body-parts",
-    },
-    {
-      id: 3,
-      name: "Автомобильные диски и шины",
-      slug: "wheels-tires",
-    },
-    {
-      id: 4,
-      name: "Запасные части для ходовой части",
-      slug: "suspension-parts",
-    },
-    {
-      id: 5,
-      name: "Автомобильные аксессуары",
-      slug: "accessories",
-    },
-  ];
 
   return (
     <div
@@ -200,17 +167,21 @@ function MobileMenu({ isOpen, onClose, customPages }: MobileMenuProps) {
           </button>
 
           {showCatalogSubmenu && (
-            <div className="flex flex-col w-full items-center">
-              {catalogCategories.map((category) => (
+            <div className="flex flex-col w-full items-center space-y-2">
+              {categories.length > 0 ? categories.map((category) => (
                 <Link
                   key={category.id}
                   href={`/catalog/${category.slug}`}
-                  className="py-3 text-[#38AE34] hover:text-white transition-colors cursor-pointer text-[14px] font-medium roboto-condensed-medium"
+                  className="py-3 w-full text-center text-[#38AE34] hover:text-white transition-colors cursor-pointer text-[14px] font-medium roboto-condensed-medium"
                   onClick={() => handleNavigation()}
                 >
                   {category.name}
                 </Link>
-              ))}
+              )) : (
+                <div className="py-3 text-white text-center">
+                  Загрузка категорий...
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -258,77 +229,16 @@ function MobileMenu({ isOpen, onClose, customPages }: MobileMenuProps) {
 }
 
 export default function Header() {
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Product[]>([]);
-  const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [footerData, setFooterData] = useState<FooterData | null>(null);
   const [isVinModalOpen, setIsVinModalOpen] = useState(false);
   const [customPages, setCustomPages] = useState<{ id: number; title: string; slug: string }[]>([]);
-
-  // Handle clicks outside of search results
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        searchRef.current &&
-        !searchRef.current.contains(event.target as Node)
-      ) {
-        setShowResults(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Debounced search function
-  const debouncedSearch = useRef(
-    debounce(async (query: string) => {
-      if (!query.trim()) {
-        setSearchResults([]);
-        return;
-      }
-
-      try {
-        // In a real app, you would fetch data from an API here
-        // For now, we'll just simulate a search
-        const mockResults: Product[] = [
-          {
-            id: 1,
-            name: "Product 1",
-            article: "A001",
-            slug: "product-1",
-            brand: "Brand A",
-            model: "Model X",
-          },
-          {
-            id: 2,
-            name: "Product 2",
-            article: "A002",
-            slug: "product-2",
-            brand: "Brand B",
-            model: "Model Y",
-          },
-        ];
-
-        setSearchResults(mockResults);
-      } catch (error) {
-        console.error("Error searching products:", error);
-        setSearchResults([]);
-      }
-    }, 300)
-  ).current;
-
-  // Handle search input change
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    setShowResults(true);
-    debouncedSearch(query);
-  };
+  const [categories, setCategories] = useState<Category[]>([]);
 
   // Fetch site settings
   useEffect(() => {
@@ -367,6 +277,20 @@ export default function Header() {
     fetchCustomPages();
   }, []);
 
+  // Fetch categories for the dropdown
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categoriesResponse = await getCategories();
+        setCategories(categoriesResponse.docs);
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
   // Helper to get URL for social link by platform
   const getSocialLinkUrl = (platform: string) => {
     const link = settings?.header?.socialLinks?.find(link => link.platform === platform);
@@ -381,6 +305,27 @@ export default function Header() {
       href: `/pages/${page.slug}`
     }))
   ];
+
+  // Simplify search input change handler
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+  };
+
+  // Handle search submission
+  const handleSearchSubmit = () => {
+    if (searchQuery.trim()) {
+      router.push(`/catalog?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  // Handle keyboard events in the search input (for Enter key)
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearchSubmit();
+    }
+  };
 
   return (
     <header ref={headerRef} className="w-full bg-white py-5">
@@ -516,7 +461,8 @@ export default function Header() {
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="text-[#555555] group-focus-within:text-[#38AE34] transition-colors w-6 aspect-square"
+                  className="text-[#555555] group-focus-within:text-[#38AE34] transition-colors w-6 aspect-square cursor-pointer hover:text-[#38AE34]"
+                  onClick={handleSearchSubmit}
                 >
                   <circle cx="11" cy="11" r="8"></circle>
                   <path d="m21 21-4.3-4.3"></path>
@@ -525,38 +471,11 @@ export default function Header() {
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  onFocus={() => setShowResults(true)}
-                  placeholder="Поиск по названию или артикулу"
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder="Поиск по названию, артикулу или OEM"
                   className="flex-1 text-sm leading-relaxed outline-none roboto-condensed-regular placeholder:text-[#8898A4]"
                 />
               </div>
-
-              {/* Search Results Dropdown */}
-              {showResults && searchResults.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
-                  {searchResults.map((product) => (
-                    <div
-                      key={product.id}
-                      onClick={() => {
-                        setShowResults(false);
-                        setSearchQuery("");
-                      }}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                    >
-                      <div className="text-sm font-medium text-[#555555] roboto-condensed-medium">
-                        {product.brand && product.model
-                          ? `${product.brand} ${product.model} - ${product.name}`
-                          : product.name}
-                      </div>
-                      {product.article && (
-                        <div className="text-xs text-[#8898A4] roboto-condensed-regular">
-                          Артикул: {product.article}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* VIN Search Button */}
@@ -669,9 +588,9 @@ export default function Header() {
             </div>
           </div>
 
-          {/* Mobile Search Input (appears below header) */}
-          <div className="mt-4">
-            <div className="relative flex items-center h-[42px] px-4 border border-[#8898A4] focus-within:border-[#38AE34] transition-colors">
+          {/* Mobile Search */}
+          <div ref={searchRef} className="relative w-full mt-4">
+            <div className="flex items-center h-10 px-4 border border-[#8898A4] hover:border-[#38AE34] focus-within:border-[#38AE34] transition-colors group">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="20"
@@ -682,7 +601,8 @@ export default function Header() {
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-[#555555] mr-2"
+                className="text-[#555555] mr-2 cursor-pointer hover:text-[#38AE34]"
+                onClick={handleSearchSubmit}
               >
                 <circle cx="11" cy="11" r="8"></circle>
                 <path d="m21 21-4.3-4.3"></path>
@@ -691,38 +611,11 @@ export default function Header() {
                 type="text"
                 value={searchQuery}
                 onChange={handleSearchChange}
-                onFocus={() => setShowResults(true)}
-                placeholder="Поиск по названию или артикулу"
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Поиск по названию, артикулу или OEM"
                 className="flex-1 text-sm leading-relaxed outline-none roboto-condensed-regular placeholder:text-[#8898A4]"
               />
             </div>
-
-            {/* Mobile Search Results */}
-            {showResults && searchResults.length > 0 && (
-              <div className="absolute z-50 w-[calc(100%-2rem)] mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
-                {searchResults.map((product) => (
-                  <div
-                    key={product.id}
-                    onClick={() => {
-                      setShowResults(false);
-                      setSearchQuery("");
-                    }}
-                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  >
-                    <div className="text-sm font-medium text-[#555555] roboto-condensed-medium">
-                      {product.brand && product.model
-                        ? `${product.brand} ${product.model} - ${product.name}`
-                        : product.name}
-                    </div>
-                    {product.article && (
-                      <div className="text-xs text-[#8898A4] roboto-condensed-regular">
-                        Артикул: {product.article}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* VIN Request for Mobile */}
@@ -743,11 +636,14 @@ export default function Header() {
         />
 
         {/* Mobile Menu */}
-        <MobileMenu
-          isOpen={isMobileMenuOpen}
-          onClose={() => setIsMobileMenuOpen(false)}
-          customPages={customPages}
-        />
+        {isMobileMenuOpen && (
+          <MobileMenu 
+            isOpen={isMobileMenuOpen} 
+            onClose={() => setIsMobileMenuOpen(false)} 
+            customPages={customPages}
+            categories={categories}
+          />
+        )}
       </div>
     </header>
   );

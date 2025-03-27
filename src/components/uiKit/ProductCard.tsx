@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Button from "./Button";
 import Image from "next/image";
 import noItemImage from "@/assets/noItem.png";
+import { API_URL } from "@/services/api";
 
 // Product attribute interfaces
 interface ProductAttributes {
@@ -67,7 +68,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { name, article, oem, brand, model, slug } = product.attributes;
 
   // Extract the image URL from the product data structure
-  const imageUrl = product?.attributes?.image?.data?.attributes?.url;
+  let imageUrl = product?.attributes?.image?.data?.attributes?.url;
+
+  // Make URL absolute if it's relative
+  if (imageUrl && imageUrl.startsWith('/')) {
+    imageUrl = `${API_URL}${imageUrl}`;
+  }
 
   // Check if the image URL is from a placeholder service, in which case we'll use noItem.png
   const isPlaceholderImage = imageUrl?.includes("placehold.co");
@@ -82,25 +88,23 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       exit={{ opacity: 0 }}
       className="bg-white rounded-none overflow-hidden cursor-pointer hover:shadow-md transition-all flex flex-col h-full"
     >
-      <div className="flex items-center justify-center pt-5">
+      {/* Fixed height container for consistent image size */}
+      <div className="flex items-center justify-center h-[200px] p-4">
         {hasRealImage ? (
-          <Image
+          <img
             src={imageUrl}
             alt={name}
-            width={250}
-            height={200}
-            className="max-h-full object-contain w-auto h-auto"
+            className="max-h-full max-w-full object-contain"
           />
         ) : (
-          <div className="flex items-center justify-center">
-            <Image
-              src={noItemImage}
-              alt="No image available"
-              width={250}
-              height={200}
-              className="object-contain"
-            />
-          </div>
+          <Image
+            src={noItemImage}
+            alt="No image available"
+            width={180}
+            height={180}
+            className="object-contain"
+            priority
+          />
         )}
       </div>
       <div className="p-6 flex flex-col gap-6 flex-grow">
@@ -109,7 +113,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             {name}
           </h3>
           <div className="text-xs text-[#8898A4] my-2 font-[Roboto_Condensed]">
-            Артикул: {article || "Н/Д"}
+            {article && `Артикул: ${article}`}
           </div>
           <ProductDetails oemNumber={oem} brand={brand} model={model} />
         </div>
