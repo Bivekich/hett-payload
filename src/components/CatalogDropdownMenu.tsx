@@ -1,19 +1,16 @@
-import React, { useState, useRef, useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
+import React, { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 import { getCategories } from '../services/catalogApi';
 import { Category } from '../types/catalog';
 import { API_URL } from '@/services/api';
-
-// Icons for categories (these should be replaced with actual SVGs)
-import { IconAuto } from "../assets/icons";
 
 interface CatalogDropdownMenuProps {
   className?: string;
 }
 
 const CatalogDropdownMenu: React.FC<CatalogDropdownMenuProps> = ({
-  className = "",
+  className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -43,7 +40,7 @@ const CatalogDropdownMenu: React.FC<CatalogDropdownMenuProps> = ({
         setCategories(categoriesResponse.docs);
         setIsLoading(false);
       } catch (error) {
-        console.error("Error fetching categories:", error);
+        console.error('Error fetching categories:', error);
         setIsLoading(false);
       }
     };
@@ -61,28 +58,28 @@ const CatalogDropdownMenu: React.FC<CatalogDropdownMenuProps> = ({
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Generate category element with consistent styling
   const renderCategoryItem = (category: Category) => {
     // Handle icon/image using similar approach as ProductSearchSection
     let iconSrc = '/images/default_category_icon.svg';
-    
+
     // First try to use the icon if available
     if (category.icon && category.icon.url) {
       iconSrc = category.icon.url;
-      
+
       // Make URL absolute if it's relative
       if (iconSrc.startsWith('/')) {
         iconSrc = `${API_URL}${iconSrc}`;
       }
-    } 
+    }
     // Fallback to the category image if icon is not available
     else if (category.image && category.image.url) {
       iconSrc = category.image.url;
-      
+
       // Make URL absolute if it's relative
       if (iconSrc.startsWith('/')) {
         iconSrc = `${API_URL}${iconSrc}`;
@@ -91,13 +88,13 @@ const CatalogDropdownMenu: React.FC<CatalogDropdownMenuProps> = ({
 
     return (
       <Link
-        key={category.id} 
+        key={category.id}
         href={`/catalog/${category.slug}`}
         className="flex group items-center gap-5 py-3 px-6 focus:text-[#38AE34]"
         onClick={closeDropdown}
       >
         <div className="w-9 h-9 flex items-center justify-center">
-          <Image 
+          <Image
             src={iconSrc}
             alt={category.name}
             width={36}
@@ -137,7 +134,7 @@ const CatalogDropdownMenu: React.FC<CatalogDropdownMenuProps> = ({
       </button>
 
       {isOpen && (
-        <div 
+        <div
           className={`absolute left-0 top-full bg-white shadow-lg z-50 py-2 flex flex-row ${
             categories.length > 4 ? 'min-w-[592px]' : 'min-w-[296px]'
           }`}
@@ -149,8 +146,11 @@ const CatalogDropdownMenu: React.FC<CatalogDropdownMenuProps> = ({
           ) : categories.length > 0 ? (
             // Split categories into columns with 4 categories each
             chunkCategories(categories, 4).map((chunk, columnIndex) => (
-              <div key={columnIndex} className="flex flex-col min-w-[296px] border-r border-gray-100 last:border-r-0">
-                {chunk.map(category => renderCategoryItem(category))}
+              <div
+                key={columnIndex}
+                className="flex flex-col min-w-[296px] border-r border-gray-100 last:border-r-0"
+              >
+                {chunk.map((category) => renderCategoryItem(category))}
               </div>
             ))
           ) : (

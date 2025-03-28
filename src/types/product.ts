@@ -1,4 +1,6 @@
 // Product interfaces
+import { RichTextContent } from './catalog';
+
 export interface ProductImage {
   data?: {
     attributes?: {
@@ -43,7 +45,7 @@ export interface ProductAttributes {
   modification: string;
   oem: string;
   image?: ProductImage;
-  description?: string;
+  description?: string | RichTextContent;
   specifications?: Specification[];
   marketplaceLinks?: MarketplaceLinks;
   distributors?: Distributor[];

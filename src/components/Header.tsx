@@ -1,22 +1,20 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { debounce } from "lodash";
-import logo from "../assets/HettLogo.svg";
-import Button from "./uiKit/Button";
-import TelegramIcon from "../assets/icons/tgIcon.svg";
-import WhatsAppIcon from "../assets/icons/whatsappIcon.svg";
-import DropdownMenu from "./uiKit/DropdownMenu";
-import React from "react";
-import CatalogDropdownMenu from "./CatalogDropdownMenu";
-import VinRequestModal from "./uiKit/VinRequestModal";
-import { getCustomPages, getSettings } from "@/services/api";
-import { getCategories, searchCatalog } from "@/services/catalogApi";
-import { Category, Product } from "@/types/catalog";
-import { useRouter } from "next/navigation";
-import { API_URL } from "@/services/api";
+import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import logo from '../assets/HettLogo.svg';
+import Button from './uiKit/Button';
+import TelegramIcon from '../assets/icons/tgIcon.svg';
+import WhatsAppIcon from '../assets/icons/whatsappIcon.svg';
+import DropdownMenu from './uiKit/DropdownMenu';
+import React from 'react';
+import CatalogDropdownMenu from './CatalogDropdownMenu';
+import VinRequestModal from './uiKit/VinRequestModal';
+import { getCustomPages, getSettings } from '@/services/api';
+import { getCategories } from '@/services/catalogApi';
+import { Category } from '@/types/catalog';
+import { useRouter } from 'next/navigation';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -72,7 +70,12 @@ interface SiteSettings {
   };
 }
 
-function MobileMenu({ isOpen, onClose, customPages, categories }: MobileMenuProps) {
+function MobileMenu({
+  isOpen,
+  onClose,
+  customPages,
+  categories,
+}: MobileMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [showCatalogSubmenu, setShowCatalogSubmenu] = useState(false);
   const [showAboutSubmenu, setShowAboutSubmenu] = useState(false);
@@ -95,7 +98,7 @@ function MobileMenu({ isOpen, onClose, customPages, categories }: MobileMenuProp
       className={`
         fixed top-0 left-0 w-full h-screen bg-black
         transform transition-all duration-300 ease-in-out
-        ${isOpen ? "translate-y-0" : "-translate-y-full"}
+        ${isOpen ? 'translate-y-0' : '-translate-y-full'}
         md:hidden
         z-50
       `}
@@ -115,7 +118,7 @@ function MobileMenu({ isOpen, onClose, customPages, categories }: MobileMenuProp
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               className={`transform transition-transform ${
-                showAboutSubmenu ? "rotate-180" : ""
+                showAboutSubmenu ? 'rotate-180' : ''
               }`}
             >
               <path d="M0 0L5 5L10 0H0Z" fill="currentColor" />
@@ -159,7 +162,7 @@ function MobileMenu({ isOpen, onClose, customPages, categories }: MobileMenuProp
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               className={`transform transition-transform ${
-                showCatalogSubmenu ? "rotate-180" : ""
+                showCatalogSubmenu ? 'rotate-180' : ''
               }`}
             >
               <path d="M0 0L5 5L10 0H0Z" fill="currentColor" />
@@ -168,16 +171,18 @@ function MobileMenu({ isOpen, onClose, customPages, categories }: MobileMenuProp
 
           {showCatalogSubmenu && (
             <div className="flex flex-col w-full items-center space-y-2">
-              {categories.length > 0 ? categories.map((category) => (
-                <Link
-                  key={category.id}
-                  href={`/catalog/${category.slug}`}
-                  className="py-3 w-full text-center text-[#38AE34] hover:text-white transition-colors cursor-pointer text-[14px] font-medium roboto-condensed-medium"
-                  onClick={() => handleNavigation()}
-                >
-                  {category.name}
-                </Link>
-              )) : (
+              {categories.length > 0 ? (
+                categories.map((category) => (
+                  <Link
+                    key={category.id}
+                    href={`/catalog/${category.slug}`}
+                    className="py-3 w-full text-center text-[#38AE34] hover:text-white transition-colors cursor-pointer text-[14px] font-medium roboto-condensed-medium"
+                    onClick={() => handleNavigation()}
+                  >
+                    {category.name}
+                  </Link>
+                ))
+              ) : (
                 <div className="py-3 text-white text-center">
                   Загрузка категорий...
                 </div>
@@ -231,13 +236,15 @@ function MobileMenu({ isOpen, onClose, customPages, categories }: MobileMenuProp
 export default function Header() {
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const searchRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [footerData, setFooterData] = useState<FooterData | null>(null);
   const [isVinModalOpen, setIsVinModalOpen] = useState(false);
-  const [customPages, setCustomPages] = useState<{ id: number; title: string; slug: string }[]>([]);
+  const [customPages, setCustomPages] = useState<
+    { id: number; title: string; slug: string }[]
+  >([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
   // Fetch site settings
@@ -246,17 +253,21 @@ export default function Header() {
       try {
         const settings = await getSettings();
         setSettings(settings);
-        
+
         // For backward compatibility, also set footerData
         if (settings?.header) {
           setFooterData({
             headerPhone: settings.header.phone,
-            telegramLink: settings.header.socialLinks?.find(link => link.platform === 'telegram')?.url,
-            whatsappLink: settings.header.socialLinks?.find(link => link.platform === 'whatsapp')?.url,
+            telegramLink: settings.header.socialLinks?.find(
+              (link) => link.platform === 'telegram'
+            )?.url,
+            whatsappLink: settings.header.socialLinks?.find(
+              (link) => link.platform === 'whatsapp'
+            )?.url,
           });
         }
       } catch (err) {
-        console.error("Error fetching settings:", err);
+        console.error('Error fetching settings:', err);
       }
     };
 
@@ -270,7 +281,7 @@ export default function Header() {
         const pages = await getCustomPages();
         setCustomPages(pages);
       } catch (err) {
-        console.error("Error fetching custom pages:", err);
+        console.error('Error fetching custom pages:', err);
       }
     };
 
@@ -284,7 +295,7 @@ export default function Header() {
         const categoriesResponse = await getCategories();
         setCategories(categoriesResponse.docs);
       } catch (err) {
-        console.error("Error fetching categories:", err);
+        console.error('Error fetching categories:', err);
       }
     };
 
@@ -293,17 +304,19 @@ export default function Header() {
 
   // Helper to get URL for social link by platform
   const getSocialLinkUrl = (platform: string) => {
-    const link = settings?.header?.socialLinks?.find(link => link.platform === platform);
+    const link = settings?.header?.socialLinks?.find(
+      (link) => link.platform === platform
+    );
     return link?.url || null;
   };
 
   // Transform custom pages into menu items format and include about page
   const aboutMenuItems = [
-    { text: "О компании", href: "/about" },
-    ...customPages.map(page => ({
+    { text: 'О компании', href: '/about' },
+    ...customPages.map((page) => ({
       text: page.title,
-      href: `/pages/${page.slug}`
-    }))
+      href: `/pages/${page.slug}`,
+    })),
   ];
 
   // Simplify search input change handler
@@ -379,10 +392,16 @@ export default function Header() {
             {/* Right Side: Contact Info */}
             <div className="flex gap-10 items-center">
               <a
-                href={`tel:${settings?.header?.phone || footerData?.headerPhone || "+7 (495) 260 20 60"}`}
+                href={`tel:${
+                  settings?.header?.phone ||
+                  footerData?.headerPhone ||
+                  '+7 (495) 260 20 60'
+                }`}
                 className="text-base font-bold leading-relaxed uppercase text-[#555555] hover:text-[#38AE34] transition-colors"
               >
-                {settings?.header?.phone || footerData?.headerPhone || "+7 (495) 260 20 60"}
+                {settings?.header?.phone ||
+                  footerData?.headerPhone ||
+                  '+7 (495) 260 20 60'}
               </a>
               <div className="flex gap-4">
                 {/* Show all social links from the settings */}
@@ -408,12 +427,16 @@ export default function Header() {
                     </div>
                   </a>
                 ))}
-                
+
                 {/* Fallback for backward compatibility */}
-                {(!settings?.header?.socialLinks || settings.header.socialLinks.length === 0) && (
+                {(!settings?.header?.socialLinks ||
+                  settings.header.socialLinks.length === 0) && (
                   <>
                     <a
-                      href={footerData?.telegramLink || "https://t.me/hettautomotive"}
+                      href={
+                        footerData?.telegramLink ||
+                        'https://t.me/hettautomotive'
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                       className="transform hover:scale-[1.1] transition-all"
@@ -427,7 +450,9 @@ export default function Header() {
                       </div>
                     </a>
                     <a
-                      href={footerData?.whatsappLink || "https://wa.me/74952602060"}
+                      href={
+                        footerData?.whatsappLink || 'https://wa.me/74952602060'
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                       className="transform hover:scale-[1.1] transition-all"
@@ -542,7 +567,11 @@ export default function Header() {
               <div className="items-center space-x-3 hidden md:flex">
                 {/* Telegram */}
                 <a
-                  href={getSocialLinkUrl('telegram') || footerData?.telegramLink || "https://t.me/hettautomotive"}
+                  href={
+                    getSocialLinkUrl('telegram') ||
+                    footerData?.telegramLink ||
+                    'https://t.me/hettautomotive'
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="transform hover:scale-[1.1] transition-all"
@@ -558,7 +587,11 @@ export default function Header() {
 
                 {/* WhatsApp */}
                 <a
-                  href={getSocialLinkUrl('whatsapp') || footerData?.whatsappLink || "https://wa.me/74952602060"}
+                  href={
+                    getSocialLinkUrl('whatsapp') ||
+                    footerData?.whatsappLink ||
+                    'https://wa.me/74952602060'
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="transform hover:scale-[1.1] transition-all"
@@ -637,9 +670,9 @@ export default function Header() {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <MobileMenu 
-            isOpen={isMobileMenuOpen} 
-            onClose={() => setIsMobileMenuOpen(false)} 
+          <MobileMenu
+            isOpen={isMobileMenuOpen}
+            onClose={() => setIsMobileMenuOpen(false)}
             customPages={customPages}
             categories={categories}
           />
@@ -653,9 +686,21 @@ export default function Header() {
 const SocialIconComponent = ({ platform }: { platform: string }) => {
   switch (platform) {
     case 'telegram':
-      return <Image src={TelegramIcon} alt="Telegram" className="w-full h-full transition-all" />;
+      return (
+        <Image
+          src={TelegramIcon}
+          alt="Telegram"
+          className="w-full h-full transition-all"
+        />
+      );
     case 'whatsapp':
-      return <Image src={WhatsAppIcon} alt="WhatsApp" className="w-full h-full transition-all" />;
+      return (
+        <Image
+          src={WhatsAppIcon}
+          alt="WhatsApp"
+          className="w-full h-full transition-all"
+        />
+      );
     // Add more social media icons as needed
     default:
       return <div className="w-5 h-5 bg-gray-300 rounded-full"></div>;

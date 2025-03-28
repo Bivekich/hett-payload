@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import Container from "./Container";
-import ProductCard from "./uiKit/ProductCard";
-import ProductDetails from "./product/ProductDetails";
-import { Product } from "../types/product";
-import { getProducts, getCatalogProducts } from '../services/catalogApi';
-import { convertCmsProductToProduct } from "./Catalog";
+import React, { useState, useEffect } from 'react';
+import Container from './Container';
+import ProductCard from './uiKit/ProductCard';
+import ProductDetails from './product/ProductDetails';
+import { Product } from '../types/product';
+import { getCatalogProducts } from '../services/catalogApi';
+import { convertCmsProductToProduct } from './Catalog';
 
 interface ProductDetailProps {
   product: Product;
@@ -14,41 +14,41 @@ interface ProductDetailProps {
 
 const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   // Extract brand and model for filtering related products
   const { brand, model } = product.attributes;
-  
+
   // Fetch related products
   useEffect(() => {
     const fetchRelatedProducts = async () => {
       try {
         setIsLoading(true);
-        
+
         // We need to find the brand and model IDs if we have their names
         // This might require additional API calls if we don't have the mapping available
 
         // Fetch products with the same brand and model by using brand name and model name
         // Since we don't have direct access to IDs, we'll use the search approach
         const filters = {
-          limit: 8,  // Fetch more in case we need to filter
-          search: `${brand || ''} ${model || ''}`.trim()
+          limit: 8, // Fetch more in case we need to filter
+          search: `${brand || ''} ${model || ''}`.trim(),
         };
-        
+
         // Use the optimized function to prevent n+1 queries
         const response = await getCatalogProducts(filters);
-        
+
         // Filter out the current product and ensure we only get products matching both brand and model
         const filtered = response.docs
           .map(convertCmsProductToProduct)
-          .filter(p => {
+          .filter((p) => {
             // Exclude the current product
             if (p.id === product.id) return false;
-            
+
             // Match on brand AND model if both are provided
             if (brand && model) {
               return (
-                p.attributes.brand.toLowerCase() === brand.toLowerCase() && 
+                p.attributes.brand.toLowerCase() === brand.toLowerCase() &&
                 p.attributes.model.toLowerCase() === model.toLowerCase()
               );
             }
@@ -60,10 +60,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
             else if (model) {
               return p.attributes.model.toLowerCase() === model.toLowerCase();
             }
-            
+
             return true;
           });
-        
+
         // Limit to 4 products
         setRelatedProducts(filtered.slice(0, 4));
         setIsLoading(false);
@@ -73,7 +73,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
         setRelatedProducts([]);
       }
     };
-    
+
     fetchRelatedProducts();
   }, [product.id, brand, model]);
 
@@ -88,7 +88,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
 
           {/* Related Products Section */}
           <div className="mb-12">
-            {relatedProducts.length > 0 ? (
+            {isLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#38AE34]"></div>
+              </div>
+            ) : relatedProducts.length > 0 ? (
               <>
                 <h2 className="text-xl sm:text-2xl font-bold mb-6 text-[#3B3B3B] font-[Roboto_Condensed]">
                   Похожие товары

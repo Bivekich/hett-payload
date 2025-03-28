@@ -1,13 +1,17 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from "next/image";
-import CategoryCard from "./CategoryCard";
-import Button from "./uiKit/Button";
-import Select from "./uiKit/Select";
-import VinRequestModal from "./uiKit/VinRequestModal";
-import { getCategories, getBrands, getModels, getModifications } from '../services/catalogApi';
+import CategoryCard from './CategoryCard';
+import Button from './uiKit/Button';
+import Select from './uiKit/Select';
+import VinRequestModal from './uiKit/VinRequestModal';
+import {
+  getCategories,
+  getBrands,
+  getModels,
+  getModifications,
+} from '../services/catalogApi';
 import { Category, Brand, Model, Modification } from '../types/catalog';
 import { API_URL } from '@/services/api';
 
@@ -21,22 +25,30 @@ interface CategoryCardData {
 
 const ProductSearchSection = () => {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectedBrand, setSelectedBrand] = useState<string>("");
-  const [selectedModel, setSelectedModel] = useState<string>("");
-  const [selectedModification, setSelectedModification] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedBrand, setSelectedBrand] = useState<string>('');
+  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [selectedModification, setSelectedModification] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [isVinModalOpen, setIsVinModalOpen] = useState(false);
-  
+
   // State variables for filter options
-  const [categoryOptions, setCategoryOptions] = useState<{value: string, label: string}[]>([]);
-  const [brandOptions, setBrandOptions] = useState<{value: string, label: string}[]>([]);
-  const [modelOptions, setModelOptions] = useState<{value: string, label: string}[]>([]);
-  const [modificationOptions, setModificationOptions] = useState<{value: string, label: string}[]>([]);
-  
+  const [categoryOptions, setCategoryOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+  const [brandOptions, setBrandOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+  const [modelOptions, setModelOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+  const [modificationOptions, setModificationOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+
   // State for category cards
   const [categoryCards, setCategoryCards] = useState<CategoryCardData[]>([]);
-  
+
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,20 +57,20 @@ const ProductSearchSection = () => {
     const fetchFilterOptions = async () => {
       try {
         setIsLoading(true);
-        
+
         // Fetch categories
         const categoriesResponse = await getCategories();
-        
+
         // Format categories for dropdown options
         const formattedCategories = [
-          { value: "", label: "Все товары" },
+          { value: '', label: 'Все товары' },
           ...categoriesResponse.docs.map((category: Category) => ({
             value: category.slug,
-            label: category.name
-          }))
+            label: category.name,
+          })),
         ];
         setCategoryOptions(formattedCategories);
-        
+
         // Format categories for category cards
         const formattedCategoryCards = categoriesResponse.docs
           // Remove the filter for featured categories to show all categories
@@ -67,20 +79,20 @@ const ProductSearchSection = () => {
           .map((category: Category) => {
             // Handle icon/image using similar approach as Banner component
             let iconSrc = '/images/default_category_icon.svg';
-            
+
             // First try to use the icon if available
             if (category.icon && category.icon.url) {
               iconSrc = category.icon.url;
-              
+
               // Make URL absolute if it's relative
               if (iconSrc.startsWith('/')) {
                 iconSrc = `${API_URL}${iconSrc}`;
               }
-            } 
+            }
             // Fallback to the category image if icon is not available
             else if (category.image && category.image.url) {
               iconSrc = category.image.url;
-              
+
               // Make URL absolute if it's relative
               if (iconSrc.startsWith('/')) {
                 iconSrc = `${API_URL}${iconSrc}`;
@@ -91,45 +103,45 @@ const ProductSearchSection = () => {
               id: category.id,
               title: category.name,
               iconSrc,
-              slug: category.slug
+              slug: category.slug,
             };
           });
-        
+
         setCategoryCards(formattedCategoryCards);
-        
+
         // Fetch brands
         const brandsResponse = await getBrands();
         const formattedBrands = [
-          { value: "", label: "Все марки" },
+          { value: '', label: 'Все марки' },
           ...brandsResponse.docs.map((brand: Brand) => ({
             value: brand.slug,
-            label: brand.name
-          }))
+            label: brand.name,
+          })),
         ];
         setBrandOptions(formattedBrands);
-        
+
         // Fetch models
         const modelsResponse = await getModels();
         const formattedModels = [
-          { value: "", label: "Все модели" },
+          { value: '', label: 'Все модели' },
           ...modelsResponse.docs.map((model: Model) => ({
             value: model.slug,
-            label: model.name
-          }))
+            label: model.name,
+          })),
         ];
         setModelOptions(formattedModels);
-        
+
         // Fetch modifications
         const modificationsResponse = await getModifications();
         const formattedModifications = [
-          { value: "", label: "Все модификации" },
+          { value: '', label: 'Все модификации' },
           ...modificationsResponse.docs.map((modification: Modification) => ({
             value: modification.slug,
-            label: modification.name
-          }))
+            label: modification.name,
+          })),
         ];
         setModificationOptions(formattedModifications);
-        
+
         setIsLoading(false);
       } catch (err) {
         console.error('Error fetching filter options:', err);
@@ -137,7 +149,7 @@ const ProductSearchSection = () => {
         setIsLoading(false);
       }
     };
-    
+
     fetchFilterOptions();
   }, []);
 
@@ -149,14 +161,14 @@ const ProductSearchSection = () => {
           // If no brand selected, load all models
           const modelsResponse = await getModels();
           const formattedModels = [
-            { value: "", label: "Все модели" },
+            { value: '', label: 'Все модели' },
             ...modelsResponse.docs.map((model: Model) => ({
               value: model.slug,
-              label: model.name
-            }))
+              label: model.name,
+            })),
           ];
           setModelOptions(formattedModels);
-          
+
           // Reset selected model when brand changes
           setSelectedModel('');
         } catch (err) {
@@ -164,32 +176,35 @@ const ProductSearchSection = () => {
         }
         return;
       }
-      
+
       try {
         // Fetch models for the selected brand
         const modelsResponse = await getModels({
-          brand: selectedBrand
+          brand: selectedBrand,
         });
-        
+
         const formattedModels = [
-          { value: "", label: "Все модели" },
+          { value: '', label: 'Все модели' },
           ...modelsResponse.docs.map((model: Model) => ({
             value: model.slug,
-            label: model.name
-          }))
+            label: model.name,
+          })),
         ];
-        
+
         setModelOptions(formattedModels);
-        
+
         // Reset selected model if it's not in the filtered options
-        if (selectedModel && !formattedModels.some(option => option.value === selectedModel)) {
+        if (
+          selectedModel &&
+          !formattedModels.some((option) => option.value === selectedModel)
+        ) {
           setSelectedModel('');
         }
       } catch (err) {
         console.error('Error fetching models by brand:', err);
       }
     };
-    
+
     // Only run if initial loading is done
     if (!isLoading) {
       fetchModelsByBrand();
@@ -204,14 +219,14 @@ const ProductSearchSection = () => {
           // If no model selected, load all modifications
           const modificationsResponse = await getModifications();
           const formattedModifications = [
-            { value: "", label: "Все модификации" },
+            { value: '', label: 'Все модификации' },
             ...modificationsResponse.docs.map((modification: Modification) => ({
               value: modification.slug,
-              label: modification.name
-            }))
+              label: modification.name,
+            })),
           ];
           setModificationOptions(formattedModifications);
-          
+
           // Reset selected modification when model changes
           setSelectedModification('');
         } catch (err) {
@@ -219,32 +234,37 @@ const ProductSearchSection = () => {
         }
         return;
       }
-      
+
       try {
         // Fetch modifications for the selected model
         const modificationsResponse = await getModifications({
-          model: selectedModel
+          model: selectedModel,
         });
-        
+
         const formattedModifications = [
-          { value: "", label: "Все модификации" },
+          { value: '', label: 'Все модификации' },
           ...modificationsResponse.docs.map((modification: Modification) => ({
             value: modification.slug,
-            label: modification.name
-          }))
+            label: modification.name,
+          })),
         ];
-        
+
         setModificationOptions(formattedModifications);
-        
+
         // Reset selected modification if it's not in the filtered options
-        if (selectedModification && !formattedModifications.some(option => option.value === selectedModification)) {
+        if (
+          selectedModification &&
+          !formattedModifications.some(
+            (option) => option.value === selectedModification
+          )
+        ) {
           setSelectedModification('');
         }
       } catch (err) {
         console.error('Error fetching modifications by model:', err);
       }
     };
-    
+
     // Only run if initial loading is done
     if (!isLoading) {
       fetchModificationsByModel();
@@ -254,45 +274,48 @@ const ProductSearchSection = () => {
   // Handlers for filter changes
   const handleBrandChange = (value: string) => {
     setSelectedBrand(value);
-    setSelectedModel(""); // Reset model when brand changes
-    setSelectedModification(""); // Reset modification when brand changes
+    setSelectedModel(''); // Reset model when brand changes
+    setSelectedModification(''); // Reset modification when brand changes
   };
 
   const handleModelChange = (value: string) => {
     setSelectedModel(value);
-    setSelectedModification(""); // Reset modification when model changes
+    setSelectedModification(''); // Reset modification when model changes
   };
 
   // Function to handle search and redirect to catalog page with filters
   const handleSearch = () => {
     // Build query parameters
     const params = new URLSearchParams();
-    
+
     // Add search query if present
     if (searchQuery) {
       params.append('search', searchQuery);
     }
-    
+
     // Add selected filters if present
     if (selectedBrand) {
       params.append('brand', selectedBrand);
     }
-    
+
     if (selectedModel) {
       params.append('model', selectedModel);
     }
-    
+
     if (selectedModification) {
       params.append('modification', selectedModification);
     }
-    
+
     if (selectedCategory) {
       params.append('category', selectedCategory);
     }
-    
+
     // Log search parameters for debugging
-    console.log('Redirecting to catalog with parameters:', Object.fromEntries(params.entries()));
-    
+    console.log(
+      'Redirecting to catalog with parameters:',
+      Object.fromEntries(params.entries())
+    );
+
     // Navigate to catalog page with query parameters
     router.push(`/catalog?${params.toString()}`);
   };
@@ -302,10 +325,10 @@ const ProductSearchSection = () => {
     // Set the category in the URL params and redirect to catalog
     const params = new URLSearchParams();
     params.append('category', categorySlug);
-    
+
     // Log action for debugging
     console.log('Redirecting to catalog with category:', categorySlug);
-    
+
     // Navigate to catalog page with category parameter
     router.push(`/catalog?${params.toString()}`);
   };
@@ -355,7 +378,9 @@ const ProductSearchSection = () => {
                   // Loading state for filters
                   <div className="col-span-full flex justify-center items-center py-4">
                     <div className="animate-spin h-6 w-6 border-t-2 rounded-full border-b-2 border-[#38AE34]"></div>
-                    <span className="ml-2 text-sm text-gray-600">Загрузка фильтров...</span>
+                    <span className="ml-2 text-sm text-gray-600">
+                      Загрузка фильтров...
+                    </span>
                   </div>
                 ) : (
                   <>
@@ -424,15 +449,24 @@ const ProductSearchSection = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
           {isLoading ? (
             // Loading state for category cards
-            Array(5).fill(0).map((_, index) => (
-              <div key={index} className="bg-white p-4 shadow-sm h-[140px] animate-pulse">
-                <div className="h-16 w-16 mx-auto bg-gray-200 mb-4"></div>
-                <div className="h-4 bg-gray-200 w-3/4 mx-auto"></div>
-              </div>
-            ))
+            Array(5)
+              .fill(0)
+              .map((_, index) => (
+                <div
+                  key={index}
+                  className="bg-white p-4 shadow-sm h-[140px] animate-pulse"
+                >
+                  <div className="h-16 w-16 mx-auto bg-gray-200 mb-4"></div>
+                  <div className="h-4 bg-gray-200 w-3/4 mx-auto"></div>
+                </div>
+              ))
+          ) : error ? (
+            <div className="col-span-full bg-red-50 p-4 rounded-lg text-red-600 text-center">
+              {error}
+            </div>
           ) : categoryCards.length > 0 ? (
             categoryCards.map((category) => (
-              <div 
+              <div
                 key={category.id}
                 onClick={() => handleCategoryClick(category.slug)}
                 className="cursor-pointer"

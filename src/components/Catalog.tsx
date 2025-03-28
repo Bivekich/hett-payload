@@ -1,15 +1,30 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useCallback } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import Container from "./Container";
-import ProductCard from "../components/uiKit/ProductCard";
-import Select from "../components/uiKit/Select";
-import Button from "../components/uiKit/Button";
-import Arrow from "../components/uiKit/SliderButton";
-import { getCategories, getSubcategories, getBrands, getModels, getModifications, getProducts, getCatalogProducts } from '../services/catalogApi';
-import { Product as CmsProduct, Category, Subcategory as CmsSubcategory, Brand as CmsBrand, Model as CmsModel, Modification, CatalogFilters } from '../types/catalog';
+import React, { useState, useEffect, useCallback } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import Container from './Container';
+import ProductCard from '../components/uiKit/ProductCard';
+import Select from '../components/uiKit/Select';
+import Button from '../components/uiKit/Button';
+import Arrow from '../components/uiKit/SliderButton';
+import {
+  getCategories,
+  getSubcategories,
+  getBrands,
+  getModels,
+  getModifications,
+  getCatalogProducts,
+} from '../services/catalogApi';
+import {
+  Product as CmsProduct,
+  Category,
+  Subcategory as CmsSubcategory,
+  Brand as CmsBrand,
+  Model as CmsModel,
+  Modification,
+  CatalogFilters,
+} from '../types/catalog';
 import { API_URL } from '@/services/api';
 
 // Interfaces for the catalog data
@@ -31,10 +46,10 @@ export const boilerplateProducts = [];
 export const convertCmsProductToProduct = (cmsProduct: CmsProduct) => {
   // Process image URL to ensure it's absolute
   let imageUrl = '';
-  
+
   if (cmsProduct.images && cmsProduct.images.length > 0) {
     console.log('Image data:', cmsProduct.images[0]); // Debug log
-    
+
     // Handle different possible image formats
     if (typeof cmsProduct.images[0] === 'string') {
       // Direct string URL
@@ -45,19 +60,22 @@ export const convertCmsProductToProduct = (cmsProduct: CmsProduct) => {
     } else if (cmsProduct.images[0].image?.url) {
       // Object with nested image object containing url
       imageUrl = cmsProduct.images[0].image.url;
-    } else if (typeof cmsProduct.images[0] === 'object' && 'url' in cmsProduct.images[0]) {
+    } else if (
+      typeof cmsProduct.images[0] === 'object' &&
+      'url' in cmsProduct.images[0]
+    ) {
       // Direct object with url property (from API with depth=1)
-      imageUrl = (cmsProduct.images[0] as any).url;
+      imageUrl = (cmsProduct.images[0] as Record<string, string>).url;
     }
-    
+
     // Make URL absolute if it's relative
     if (imageUrl && imageUrl.startsWith('/')) {
       imageUrl = `${API_URL}${imageUrl}`;
     }
-    
+
     console.log('Processed image URL:', imageUrl); // Debug log
   }
-  
+
   return {
     id: parseInt(cmsProduct.id),
     attributes: {
@@ -65,9 +83,18 @@ export const convertCmsProductToProduct = (cmsProduct: CmsProduct) => {
       slug: cmsProduct.slug,
       article: cmsProduct.sku || '',
       price: cmsProduct.price ? cmsProduct.price.toString() : '',
-      brand: typeof cmsProduct.brand === 'string' ? cmsProduct.brand : cmsProduct.brand?.name || '',
-      model: typeof cmsProduct.model === 'string' ? cmsProduct.model : cmsProduct.model?.name || '',
-      modification: typeof cmsProduct.modification === 'string' ? cmsProduct.modification : cmsProduct.modification?.name || '',
+      brand:
+        typeof cmsProduct.brand === 'string'
+          ? cmsProduct.brand
+          : cmsProduct.brand?.name || '',
+      model:
+        typeof cmsProduct.model === 'string'
+          ? cmsProduct.model
+          : cmsProduct.model?.name || '',
+      modification:
+        typeof cmsProduct.modification === 'string'
+          ? cmsProduct.modification
+          : cmsProduct.modification?.name || '',
       oem: cmsProduct.oem || '',
       image: {
         data: {
@@ -78,36 +105,41 @@ export const convertCmsProductToProduct = (cmsProduct: CmsProduct) => {
       },
       // Pass rich text description directly
       description: cmsProduct.description || undefined,
-      
+
       // Map specifications from CMS
-      specifications: cmsProduct.specifications?.map(spec => ({
-        name: spec.name,
-        value: spec.value
-      })) || [],
-      
+      specifications:
+        cmsProduct.specifications?.map((spec) => ({
+          name: spec.name,
+          value: spec.value,
+        })) || [],
+
       // Map marketplace links
       marketplaceLinks: {
         ozon: cmsProduct.marketplaceLinks?.ozon || '',
         wildberries: cmsProduct.marketplaceLinks?.wildberries || '',
-        others: cmsProduct.marketplaceLinks?.others?.map(m => ({
-          name: m.name,
-          url: m.url,
-          logo: m.logo
-        })) || []
+        others:
+          cmsProduct.marketplaceLinks?.others?.map((m) => ({
+            name: m.name,
+            url: m.url,
+            logo: m.logo,
+          })) || [],
       },
-      
+
       // Map distributors
-      distributors: cmsProduct.distributors?.map(d => ({
-        name: d.name,
-        url: d.url,
-        location: d.location
-      })) || []
+      distributors:
+        cmsProduct.distributors?.map((d) => ({
+          name: d.name,
+          url: d.url,
+          location: d.location,
+        })) || [],
     },
   };
 };
 
 // Helper function to convert CMS subcategory to frontend subcategory format
-const convertCmsSubcategoryToSubcategory = (cmsSubcategory: CmsSubcategory): Subcategory => {
+const convertCmsSubcategoryToSubcategory = (
+  cmsSubcategory: CmsSubcategory
+): Subcategory => {
   return {
     id: parseInt(cmsSubcategory.id),
     attributes: {
@@ -127,42 +159,53 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchQuery = searchParams?.get('search');
-  
+
   // State for metadata
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [brands, setBrands] = useState<CmsBrand[]>([]);
   const [models, setModels] = useState<CmsModel[]>([]);
   const [modifications, setModifications] = useState<Modification[]>([]);
-  
+
   // State for filtered options that are relevant to current selection
   const [filteredBrands, setFilteredBrands] = useState<CmsBrand[]>([]);
   const [filteredModels, setFilteredModels] = useState<CmsModel[]>([]);
-  const [filteredModifications, setFilteredModifications] = useState<Modification[]>([]);
-  
+  const [filteredModifications, setFilteredModifications] = useState<
+    Modification[]
+  >([]);
+
   // State for products
   const [cmsProducts, setCmsProducts] = useState<CmsProduct[]>([]);
   const [products, setProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
-  
+
   // UI state
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
   const [metadataLoaded, setMetadataLoaded] = useState<boolean>(false);
-  
+
   // Filter states - single source of truth for what's displayed in the UI
-  const [filterCategory, setFilterCategory] = useState<string | null>(initialCategory || null);
-  const [filterSubcategory, setFilterSubcategory] = useState<Subcategory | null>(null);
+  const [filterCategory, setFilterCategory] = useState<string | null>(
+    initialCategory || null
+  );
+  const [filterSubcategory, setFilterSubcategory] =
+    useState<Subcategory | null>(null);
   const [filterBrand, setFilterBrand] = useState<string | null>(null);
   const [filterModel, setFilterModel] = useState<string | null>(null);
-  const [filterModification, setFilterModification] = useState<string | null>(null);
+  const [filterModification, setFilterModification] = useState<string | null>(
+    null
+  );
   const [hasActiveSearch, setHasActiveSearch] = useState<boolean>(false);
-  
+
   // Form values - what's displayed in the form inputs
-  const [formCategory, setFormCategory] = useState<string | null>(initialCategory || null);
-  const [formSubcategory, setFormSubcategory] = useState<Subcategory | null>(null);
+  const [formCategory, setFormCategory] = useState<string | null>(
+    initialCategory || null
+  );
+  const [formSubcategory, setFormSubcategory] = useState<Subcategory | null>(
+    null
+  );
   const [formBrand, setFormBrand] = useState<string | null>(null);
   const [formModel, setFormModel] = useState<string | null>(null);
   const [formModification, setFormModification] = useState<string | null>(null);
@@ -172,32 +215,34 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     const fetchMetadata = async () => {
       try {
         setIsLoading(true);
-        
+
         // Fetch all metadata in parallel for better performance
         const [
-          categoriesResponse, 
-          subcategoriesResponse, 
-          brandsResponse, 
-          modelsResponse, 
-          modificationsResponse
+          categoriesResponse,
+          subcategoriesResponse,
+          brandsResponse,
+          modelsResponse,
+          modificationsResponse,
         ] = await Promise.all([
           getCategories(),
           getSubcategories(),
           getBrands(),
           getModels(),
-          getModifications()
+          getModifications(),
         ]);
-        
+
         // Process the results
         setCategories(categoriesResponse.docs);
-        setSubcategories(subcategoriesResponse.docs.map(convertCmsSubcategoryToSubcategory));
+        setSubcategories(
+          subcategoriesResponse.docs.map(convertCmsSubcategoryToSubcategory)
+        );
         setBrands(brandsResponse.docs);
         setFilteredBrands(brandsResponse.docs); // Initially all brands are available
         setModels(modelsResponse.docs);
         setFilteredModels(modelsResponse.docs); // Initially all models are available
         setModifications(modificationsResponse.docs);
         setFilteredModifications(modificationsResponse.docs); // Initially all modifications are available
-        
+
         setMetadataLoaded(true);
         setIsLoading(false);
       } catch (err) {
@@ -206,74 +251,88 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
         setIsLoading(false);
       }
     };
-    
+
     fetchMetadata();
   }, []);
 
   // New helper function to update filter options based on fetched products
-  const updateFilterOptions = useCallback((products: any[]) => {
-    if (!products.length) return;
-    
-    // Save the current category filter
-    const currentCategorySlug = filterCategory;
-    
-    // For each product, collect the unique values of related entities
-    const categorySet = new Set<number>();
-    const subcategorySet = new Set<number>();
-    const brandSet = new Set<number>();
-    const modelSet = new Set<number>();
-    const modificationSet = new Set<number>();
-    
-    // Go through all products and collect IDs
-    products.forEach(product => {
-      // Safely get IDs handling both object and ID formats
-      const categoryId = typeof product.category === 'object' ? product.category?.id : product.category;
-      const subcategoryId = typeof product.subcategory === 'object' ? product.subcategory?.id : product.subcategory;
-      const brandId = typeof product.brand === 'object' ? product.brand?.id : product.brand;
-      const modelId = typeof product.model === 'object' ? product.model?.id : product.model;
-      const modificationId = typeof product.modification === 'object' ? product.modification?.id : product.modification;
-      
-      // Add IDs to sets if they exist
-      if (categoryId) categorySet.add(Number(categoryId));
-      if (subcategoryId) subcategorySet.add(Number(subcategoryId));
-      if (brandId) brandSet.add(Number(brandId));
-      if (modelId) modelSet.add(Number(modelId));
-      if (modificationId) modificationSet.add(Number(modificationId));
-    });
-    
-    console.log("Related entity IDs from products:", {
-      categories: Array.from(categorySet),
-      subcategories: Array.from(subcategorySet),
-      brands: Array.from(brandSet),
-      models: Array.from(modelSet),
-      modifications: Array.from(modificationSet)
-    });
-    
-    // Only update filtered options if we're not on a specific category page
-    // This prevents confusing the user when they're browsing a specific category
-    if (!initialCategory && !currentCategorySlug) {
-      // Update brand options based on the products we received
-      setFilteredBrands(brands.filter(brand => 
-        brandSet.has(Number(brand.id))
-      ));
-      
-      // Update model options based on the products we received
-      setFilteredModels(models.filter(model => 
-        modelSet.has(Number(model.id))
-      ));
-      
-      // Update modification options based on the products we received
-      setFilteredModifications(modifications.filter(mod => 
-        modificationSet.has(Number(mod.id))
-      ));
-    }
-  }, [initialCategory, filterCategory, brands, models, modifications]);
+  const updateFilterOptions = useCallback(
+    (products: CmsProduct[]) => {
+      if (!products.length) return;
+
+      // Save the current category filter
+      const currentCategorySlug = filterCategory;
+
+      // For each product, collect the unique values of related entities
+      const categorySet = new Set<number>();
+      const subcategorySet = new Set<number>();
+      const brandSet = new Set<number>();
+      const modelSet = new Set<number>();
+      const modificationSet = new Set<number>();
+
+      // Go through all products and collect IDs
+      products.forEach((product) => {
+        // Safely get IDs handling both object and ID formats
+        const categoryId =
+          typeof product.category === 'object'
+            ? product.category?.id
+            : product.category;
+        const subcategoryId =
+          typeof product.subcategory === 'object'
+            ? product.subcategory?.id
+            : product.subcategory;
+        const brandId =
+          typeof product.brand === 'object' ? product.brand?.id : product.brand;
+        const modelId =
+          typeof product.model === 'object' ? product.model?.id : product.model;
+        const modificationId =
+          typeof product.modification === 'object'
+            ? product.modification?.id
+            : product.modification;
+
+        // Add IDs to sets if they exist
+        if (categoryId) categorySet.add(Number(categoryId));
+        if (subcategoryId) subcategorySet.add(Number(subcategoryId));
+        if (brandId) brandSet.add(Number(brandId));
+        if (modelId) modelSet.add(Number(modelId));
+        if (modificationId) modificationSet.add(Number(modificationId));
+      });
+
+      console.log('Related entity IDs from products:', {
+        categories: Array.from(categorySet),
+        subcategories: Array.from(subcategorySet),
+        brands: Array.from(brandSet),
+        models: Array.from(modelSet),
+        modifications: Array.from(modificationSet),
+      });
+
+      // Only update filtered options if we're not on a specific category page
+      // This prevents confusing the user when they're browsing a specific category
+      if (!initialCategory && !currentCategorySlug) {
+        // Update brand options based on the products we received
+        setFilteredBrands(
+          brands.filter((brand) => brandSet.has(Number(brand.id)))
+        );
+
+        // Update model options based on the products we received
+        setFilteredModels(
+          models.filter((model) => modelSet.has(Number(model.id)))
+        );
+
+        // Update modification options based on the products we received
+        setFilteredModifications(
+          modifications.filter((mod) => modificationSet.has(Number(mod.id)))
+        );
+      }
+    },
+    [initialCategory, filterCategory, brands, models, modifications]
+  );
 
   // Fetch products based on active filters
   const fetchProducts = useCallback(async () => {
-      try {
-        setIsLoading(true);
-      console.log("Fetching products with filters:", {
+    try {
+      setIsLoading(true);
+      console.log('Fetching products with filters:', {
         category: filterCategory,
         subcategory: filterSubcategory,
         brand: filterBrand,
@@ -281,66 +340,68 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
         modification: filterModification,
         page: currentPage,
       });
-      
+
       // Build filter object for API call
       const filters: CatalogFilters = {
-          page: currentPage,
+        page: currentPage,
         limit: 12, // Show 12 products per page
         depth: 0, // Use flat response for better performance
       };
-      
+
       // Only add filters if they are not null/empty
       if (filterCategory) {
         filters.category = filterCategory;
       }
-      
+
       if (filterSubcategory) {
         // Use slug for filtering
         filters.subcategory = filterSubcategory.attributes.slug || '';
       }
-      
+
       if (filterBrand) {
         filters.brand = filterBrand;
       }
-      
+
       if (filterModel) {
         filters.model = filterModel;
       }
-      
+
       if (filterModification) {
         filters.modification = filterModification;
       }
-      
+
       if (searchQuery) {
         filters.search = searchQuery;
       }
-      
-      console.log("API filters:", filters);
-      
+
+      console.log('API filters:', filters);
+
       // Use optimized catalog fetch to prevent n+1 query problems
       const response = await getCatalogProducts(filters);
-      
+
       // Process products for display
       const cmsProducts = response.docs;
-      
+
       console.log(`Fetched ${cmsProducts.length} products from API`);
-      
+
       setCmsProducts(cmsProducts);
-        setTotalPages(response.totalPages);
-        
+      setTotalPages(response.totalPages);
+
       // Convert CMS products to frontend format
       setProducts(cmsProducts.map(convertCmsProductToProduct));
-        setIsLoading(false);
-      
+      setIsLoading(false);
+
       // Log the IDs of the products we got back for debugging
-      console.log("Product IDs returned:", cmsProducts.map(p => p.id));
-      
+      console.log(
+        'Product IDs returned:',
+        cmsProducts.map((p) => p.id)
+      );
+
       // After loading products, update the filtered options based on what we got back
       updateFilterOptions(cmsProducts);
-      
     } catch (error) {
-      console.error("Error fetching products:", error);
-        setIsLoading(false);
+      console.error('Error fetching products:', error);
+      setIsLoading(false);
       setProducts([]);
       setCmsProducts([]);
     }
@@ -352,90 +413,103 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     filterModification,
     searchQuery,
     currentPage,
-    updateFilterOptions
+    updateFilterOptions,
   ]);
-  
+
   // Filter brands based on current category selection
   useEffect(() => {
     if (!metadataLoaded) return;
-    
+
     // If no category selected, reset filters to all options
     if (!filterCategory) {
       setFilteredBrands(brands);
-      console.log("No category filter, showing all brands");
+      console.log('No category filter, showing all brands');
       return;
     }
-    
+
     // When a category is selected, only show brands that have products in this category
     console.log(`Filtering brands for category ${filterCategory}`);
-    
+
     // Find the category object from the slug
-    const categoryObj = categories.find(cat => cat.slug === filterCategory);
+    const categoryObj = categories.find((cat) => cat.slug === filterCategory);
     if (!categoryObj) {
       console.log(`Could not find category object for slug ${filterCategory}`);
       setFilteredBrands(brands);
       return;
     }
-    
+
     // For debugging: log the categoryId we're filtering by
     console.log(`Found category with ID ${categoryObj.id}`);
-    
+
     // If no products loaded yet, we can't filter by products
     if (cmsProducts.length === 0) {
       console.log("No products loaded yet, can't filter brands by products");
       setFilteredBrands(brands);
       return;
     }
-    
+
     // Create a set to store brand IDs that have products in this category
     const brandIds = new Set<string>();
-    
+
     // Log product relationships for debugging
-    cmsProducts.forEach(product => {
-      const productCategoryId = typeof product.category === 'object' 
-        ? product.category?.id 
-        : product.category;
-        
-      const productBrandId = typeof product.brand === 'object'
-        ? product.brand?.id
-        : product.brand;
-        
+    cmsProducts.forEach((product) => {
+      const productCategoryId =
+        typeof product.category === 'object'
+          ? product.category?.id
+          : product.category;
+
+      const productBrandId =
+        typeof product.brand === 'object' ? product.brand?.id : product.brand;
+
       if (productCategoryId && productBrandId) {
-        console.log(`Product ${product.id} has category ${productCategoryId} and brand ${productBrandId}`);
+        console.log(
+          `Product ${product.id} has category ${productCategoryId} and brand ${productBrandId}`
+        );
       }
     });
-    
+
     // Collect brands that have products in this category
-    cmsProducts.forEach(product => {
-      const productCategoryId = typeof product.category === 'object' 
-        ? product.category?.id 
-        : product.category;
-        
+    cmsProducts.forEach((product) => {
+      const productCategoryId =
+        typeof product.category === 'object'
+          ? product.category?.id
+          : product.category;
+
       // Use toString() to normalize the comparison
-      if (productCategoryId && productCategoryId.toString() === categoryObj.id.toString()) {
-        const brandId = typeof product.brand === 'object' 
-          ? product.brand?.id 
-          : product.brand;
-          
+      if (
+        productCategoryId &&
+        productCategoryId.toString() === categoryObj.id.toString()
+      ) {
+        const brandId =
+          typeof product.brand === 'object' ? product.brand?.id : product.brand;
+
         if (brandId) {
           brandIds.add(brandId.toString());
         }
       }
     });
-    
-    console.log(`Found ${brandIds.size} matching brand IDs:`, Array.from(brandIds));
-    
+
+    console.log(
+      `Found ${brandIds.size} matching brand IDs:`,
+      Array.from(brandIds)
+    );
+
     // Filter brands to only those that have products in this category
-    const categoryBrands = brands.filter(brand => 
+    const categoryBrands = brands.filter((brand) =>
       brandIds.has(brand.id.toString())
     );
-    
+
     if (categoryBrands.length > 0) {
       setFilteredBrands(categoryBrands);
-      console.log(`Filtered brands for category ${filterCategory}:`, categoryBrands.map(b => b.name));
+      console.log(
+        `Filtered brands for category ${filterCategory}:`,
+        categoryBrands.map((b) => b.name)
+      );
     } else {
       // If no brands found, show all brands
-      console.log(`No brands found for category ${filterCategory}, showing all brands`);
+      console.log(
+        `No brands found for category ${filterCategory}, showing all brands`
+      );
       setFilteredBrands(brands);
     }
   }, [metadataLoaded, filterCategory, categories, brands, cmsProducts]);
@@ -443,306 +517,391 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   // Filter models based on current brand selection
   useEffect(() => {
     if (!metadataLoaded) return;
-    
+
     // If no brand selected, show models for the current category
     if (!filterBrand) {
       if (filterCategory && cmsProducts.length > 0) {
         // Find models that belong to products in this category
         const modelIds = new Set<string>();
-        
+
         // Find the category object from the slug
-        const categoryObj = categories.find(cat => cat.slug === filterCategory);
+        const categoryObj = categories.find(
+          (cat) => cat.slug === filterCategory
+        );
         if (!categoryObj) {
-          console.log(`Could not find category object for slug ${filterCategory}`);
+          console.log(
+            `Could not find category object for slug ${filterCategory}`
+          );
           setFilteredModels(models);
           return;
         }
-        
+
         // Log the category we're filtering by
         console.log(`Filtering models for category ID ${categoryObj.id}`);
-        
-        cmsProducts.forEach(product => {
-          const productCategoryId = typeof product.category === 'object' 
-            ? product.category?.id 
-            : product.category;
-            
+
+        cmsProducts.forEach((product) => {
+          const productCategoryId =
+            typeof product.category === 'object'
+              ? product.category?.id
+              : product.category;
+
           // Use toString() to normalize the comparison
-          if (productCategoryId && productCategoryId.toString() === categoryObj.id.toString()) {
-            const modelId = typeof product.model === 'object' 
-              ? product.model?.id 
-              : product.model;
-              
+          if (
+            productCategoryId &&
+            productCategoryId.toString() === categoryObj.id.toString()
+          ) {
+            const modelId =
+              typeof product.model === 'object'
+                ? product.model?.id
+                : product.model;
+
             if (modelId) {
               modelIds.add(modelId.toString());
             }
           }
         });
-        
-        console.log(`Found ${modelIds.size} matching model IDs:`, Array.from(modelIds));
-        
+
+        console.log(
+          `Found ${modelIds.size} matching model IDs:`,
+          Array.from(modelIds)
+        );
+
         // Filter models to only those in this category
-        const categoryModels = models.filter(model => 
+        const categoryModels = models.filter((model) =>
           modelIds.has(model.id.toString())
         );
-        
+
         if (categoryModels.length > 0) {
           setFilteredModels(categoryModels);
-          console.log(`Filtered models for category ${filterCategory}:`, categoryModels.map(m => m.name));
+          console.log(
+            `Filtered models for category ${filterCategory}:`,
+            categoryModels.map((m) => m.name)
+          );
           return;
         }
       }
-      
+
       // Default to all models if no category filter or no matches
       setFilteredModels(models);
       return;
     }
-    
+
     // When a brand is selected, show only models for that brand
     // First find the brand object
-    const brandObj = brands.find(b => b.slug === filterBrand);
+    const brandObj = brands.find((b) => b.slug === filterBrand);
     if (!brandObj) {
       console.log(`Could not find brand object for slug ${filterBrand}`);
       setFilteredModels(models);
       return;
     }
-    
+
     // Log the brand we're filtering by
     console.log(`Filtering models for brand ID ${brandObj.id}`);
-    
+
     // For extra validation, check if there are products with this brand in the result set
     if (cmsProducts.length > 0) {
       const modelIds = new Set<string>();
-      
-      cmsProducts.forEach(product => {
-        const productBrandId = typeof product.brand === 'object' 
-          ? product.brand?.id 
-          : product.brand;
-          
+
+      cmsProducts.forEach((product) => {
+        const productBrandId =
+          typeof product.brand === 'object' ? product.brand?.id : product.brand;
+
         // Use toString() to normalize the comparison
-        if (productBrandId && productBrandId.toString() === brandObj.id.toString()) {
-          const modelId = typeof product.model === 'object' 
-            ? product.model?.id 
-            : product.model;
-            
+        if (
+          productBrandId &&
+          productBrandId.toString() === brandObj.id.toString()
+        ) {
+          const modelId =
+            typeof product.model === 'object'
+              ? product.model?.id
+              : product.model;
+
           if (modelId) {
             modelIds.add(modelId.toString());
           }
         }
       });
-      
-      console.log(`Found ${modelIds.size} models in products for brand ${filterBrand}:`, Array.from(modelIds));
-      
+
+      console.log(
+        `Found ${modelIds.size} models in products for brand ${filterBrand}:`,
+        Array.from(modelIds)
+      );
+
       if (modelIds.size > 0) {
         // Filter models to only those in products
-        const brandProductModels = models.filter(model => 
+        const brandProductModels = models.filter((model) =>
           modelIds.has(model.id.toString())
         );
-        
+
         if (brandProductModels.length > 0) {
           setFilteredModels(brandProductModels);
-          console.log(`Using product-based filtered models for brand ${filterBrand}:`, brandProductModels.map(m => m.name));
+          console.log(
+            `Using product-based filtered models for brand ${filterBrand}:`,
+            brandProductModels.map((m) => m.name)
+          );
           return;
         }
       }
     }
-    
+
     // Fall back to relationship-based filtering
     // Filter models to only those belonging to the selected brand
-    const filtered = models.filter(model => {
-      const modelBrandId = typeof model.brand === 'object' 
-        ? model.brand?.id 
-        : model.brand;
-        
+    const filtered = models.filter((model) => {
+      const modelBrandId =
+        typeof model.brand === 'object' ? model.brand?.id : model.brand;
+
       return modelBrandId && modelBrandId.toString() === brandObj.id.toString();
     });
-    
+
     if (filtered.length > 0) {
       setFilteredModels(filtered);
-      console.log(`Filtered models for brand ${filterBrand}:`, filtered.map(m => m.name));
+      console.log(
+        `Filtered models for brand ${filterBrand}:`,
+        filtered.map((m) => m.name)
+      );
     } else {
       // If no matching models, show all models
       setFilteredModels(models);
-      console.log(`No models found for brand ${filterBrand}, showing all models`);
+      console.log(
+        `No models found for brand ${filterBrand}, showing all models`
+      );
     }
-  }, [metadataLoaded, filterBrand, filterCategory, models, brands, cmsProducts, categories]);
+  }, [
+    metadataLoaded,
+    filterBrand,
+    filterCategory,
+    models,
+    brands,
+    cmsProducts,
+    categories,
+  ]);
 
   // Filter modifications based on current model selection
   useEffect(() => {
     if (!metadataLoaded) return;
-    
+
     // If no model selected, but we have a brand, show modifications for that brand
     if (!filterModel && filterBrand && cmsProducts.length > 0) {
       // Find the brand object from the slug
-      const brandObj = brands.find(b => b.slug === filterBrand);
+      const brandObj = brands.find((b) => b.slug === filterBrand);
       if (!brandObj) {
         console.log(`Could not find brand object for slug ${filterBrand}`);
         setFilteredModifications(modifications);
         return;
       }
-      
+
       // Log the brand we're filtering by
       console.log(`Filtering modifications for brand ID ${brandObj.id}`);
-      
+
       // Find modifications available for this brand from products
       const modIds = new Set<string>();
-      
-      cmsProducts.forEach(product => {
-        const productBrandId = typeof product.brand === 'object' 
-          ? product.brand?.id 
-          : product.brand;
-          
+
+      cmsProducts.forEach((product) => {
+        const productBrandId =
+          typeof product.brand === 'object' ? product.brand?.id : product.brand;
+
         // Use toString() to normalize the comparison
-        if (productBrandId && productBrandId.toString() === brandObj.id.toString()) {
-          const modId = typeof product.modification === 'object' 
-            ? product.modification?.id 
-            : product.modification;
-            
+        if (
+          productBrandId &&
+          productBrandId.toString() === brandObj.id.toString()
+        ) {
+          const modId =
+            typeof product.modification === 'object'
+              ? product.modification?.id
+              : product.modification;
+
           if (modId) {
             modIds.add(modId.toString());
           }
         }
       });
-      
-      console.log(`Found ${modIds.size} matching modification IDs for brand:`, Array.from(modIds));
-      
+
+      console.log(
+        `Found ${modIds.size} matching modification IDs for brand:`,
+        Array.from(modIds)
+      );
+
       // Filter modifications to only those for this brand
-      const brandMods = modifications.filter(mod => 
+      const brandMods = modifications.filter((mod) =>
         modIds.has(mod.id.toString())
       );
-      
+
       if (brandMods.length > 0) {
         setFilteredModifications(brandMods);
-        console.log(`Filtered modifications for brand ${filterBrand}:`, brandMods.map(m => m.name));
+        console.log(
+          `Filtered modifications for brand ${filterBrand}:`,
+          brandMods.map((m) => m.name)
+        );
         return;
       }
     }
-    
+
     // If no model selected at all, show all modifications (or filtered by category if set)
     if (!filterModel) {
       if (filterCategory && cmsProducts.length > 0) {
         // Find the category object from the slug
-        const categoryObj = categories.find(cat => cat.slug === filterCategory);
+        const categoryObj = categories.find(
+          (cat) => cat.slug === filterCategory
+        );
         if (!categoryObj) {
-          console.log(`Could not find category object for slug ${filterCategory}`);
+          console.log(
+            `Could not find category object for slug ${filterCategory}`
+          );
           setFilteredModifications(modifications);
           return;
         }
-        
+
         // Log the category we're filtering by
-        console.log(`Filtering modifications for category ID ${categoryObj.id}`);
-        
+        console.log(
+          `Filtering modifications for category ID ${categoryObj.id}`
+        );
+
         // Find modifications that belong to products in this category
         const modIds = new Set<string>();
-        
-        cmsProducts.forEach(product => {
-          const productCategoryId = typeof product.category === 'object' 
-            ? product.category?.id 
-            : product.category;
-            
+
+        cmsProducts.forEach((product) => {
+          const productCategoryId =
+            typeof product.category === 'object'
+              ? product.category?.id
+              : product.category;
+
           // Use toString() to normalize the comparison
-          if (productCategoryId && productCategoryId.toString() === categoryObj.id.toString()) {
-            const modId = typeof product.modification === 'object' 
-              ? product.modification?.id 
-              : product.modification;
-              
+          if (
+            productCategoryId &&
+            productCategoryId.toString() === categoryObj.id.toString()
+          ) {
+            const modId =
+              typeof product.modification === 'object'
+                ? product.modification?.id
+                : product.modification;
+
             if (modId) {
               modIds.add(modId.toString());
             }
           }
         });
-        
-        console.log(`Found ${modIds.size} matching modification IDs for category:`, Array.from(modIds));
-        
+
+        console.log(
+          `Found ${modIds.size} matching modification IDs for category:`,
+          Array.from(modIds)
+        );
+
         // Filter modifications to only those in this category
-        const categoryMods = modifications.filter(mod => 
+        const categoryMods = modifications.filter((mod) =>
           modIds.has(mod.id.toString())
         );
-        
+
         if (categoryMods.length > 0) {
           setFilteredModifications(categoryMods);
-          console.log(`Filtered modifications for category ${filterCategory}:`, categoryMods.map(m => m.name));
+          console.log(
+            `Filtered modifications for category ${filterCategory}:`,
+            categoryMods.map((m) => m.name)
+          );
           return;
         }
       }
-      
+
       // Default to all modifications
       setFilteredModifications(modifications);
       return;
     }
-    
+
     // When a model is selected, show only modifications for that model
     // First find the model object
-    const modelObj = models.find(m => m.slug === filterModel);
+    const modelObj = models.find((m) => m.slug === filterModel);
     if (!modelObj) {
       console.log(`Could not find model object for slug ${filterModel}`);
       setFilteredModifications(modifications);
       return;
     }
-    
+
     // Log the model we're filtering by
     console.log(`Filtering modifications for model ID ${modelObj.id}`);
-    
+
     // For extra validation, check if there are products with this model in the result set
     if (cmsProducts.length > 0) {
       const modIds = new Set<string>();
-      
-      cmsProducts.forEach(product => {
-        const productModelId = typeof product.model === 'object' 
-          ? product.model?.id 
-          : product.model;
-          
+
+      cmsProducts.forEach((product) => {
+        const productModelId =
+          typeof product.model === 'object' ? product.model?.id : product.model;
+
         // Use toString() to normalize the comparison
-        if (productModelId && productModelId.toString() === modelObj.id.toString()) {
-          const modId = typeof product.modification === 'object' 
-            ? product.modification?.id 
-            : product.modification;
-            
+        if (
+          productModelId &&
+          productModelId.toString() === modelObj.id.toString()
+        ) {
+          const modId =
+            typeof product.modification === 'object'
+              ? product.modification?.id
+              : product.modification;
+
           if (modId) {
             modIds.add(modId.toString());
           }
         }
       });
-      
-      console.log(`Found ${modIds.size} modifications in products for model ${filterModel}:`, Array.from(modIds));
-      
+
+      console.log(
+        `Found ${modIds.size} modifications in products for model ${filterModel}:`,
+        Array.from(modIds)
+      );
+
       if (modIds.size > 0) {
         // Filter modifications to only those in products
-        const modelProductMods = modifications.filter(mod => 
+        const modelProductMods = modifications.filter((mod) =>
           modIds.has(mod.id.toString())
         );
-        
+
         if (modelProductMods.length > 0) {
           setFilteredModifications(modelProductMods);
-          console.log(`Using product-based filtered modifications for model ${filterModel}:`, modelProductMods.map(m => m.name));
+          console.log(
+            `Using product-based filtered modifications for model ${filterModel}:`,
+            modelProductMods.map((m) => m.name)
+          );
           return;
         }
       }
     }
-    
+
     // Fall back to relationship-based filtering
     // Filter modifications to only those belonging to the selected model
-    const filtered = modifications.filter(mod => {
-      const modModelId = typeof mod.model === 'object' 
-        ? mod.model?.id 
-        : mod.model;
-        
+    const filtered = modifications.filter((mod) => {
+      const modModelId =
+        typeof mod.model === 'object' ? mod.model?.id : mod.model;
+
       return modModelId && modModelId.toString() === modelObj.id.toString();
     });
-    
+
     if (filtered.length > 0) {
       setFilteredModifications(filtered);
-      console.log(`Filtered modifications for model ${filterModel}:`, filtered.map(m => m.name));
+      console.log(
+        `Filtered modifications for model ${filterModel}:`,
+        filtered.map((m) => m.name)
+      );
     } else {
       // If no matching modifications, show all modifications
       setFilteredModifications(modifications);
-      console.log(`No modifications found for model ${filterModel}, showing all modifications`);
+      console.log(
+        `No modifications found for model ${filterModel}, showing all modifications`
+      );
     }
-  }, [metadataLoaded, filterModel, filterBrand, filterCategory, modifications, models, brands, cmsProducts, categories]);
+  }, [
+    metadataLoaded,
+    filterModel,
+    filterBrand,
+    filterCategory,
+    modifications,
+    models,
+    brands,
+    cmsProducts,
+    categories,
+  ]);
 
   // Parse search parameters from URL and/or pathname
   useEffect(() => {
     if (!metadataLoaded) return;
-    
+
     // Start with defaults
     let newCategory = initialCategory || null;
     let newSubcategory: Subcategory | null = null;
@@ -750,58 +909,69 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     let newModel: string | null = null;
     let newModification: string | null = null;
     let searchActive = false;
-    
+
     // Parse URL search parameters (query string)
     if (searchParams) {
       const urlCategory = searchParams.get('category');
-      const urlSubcategory = searchParams.get('subcategory') || searchParams.get('subcat');
+      const urlSubcategory =
+        searchParams.get('subcategory') || searchParams.get('subcat');
       const urlBrand = searchParams.get('brand');
       const urlModel = searchParams.get('model');
-      const urlModification = searchParams.get('modification') || searchParams.get('mod');
+      const urlModification =
+        searchParams.get('modification') || searchParams.get('mod');
       const searchQuery = searchParams.get('search');
-      
+
       // If any search parameter is present, mark search as active
-      if (urlCategory || urlSubcategory || urlBrand || urlModel || urlModification || searchQuery) {
+      if (
+        urlCategory ||
+        urlSubcategory ||
+        urlBrand ||
+        urlModel ||
+        urlModification ||
+        searchQuery
+      ) {
         searchActive = true;
-        
+
         // Apply search parameters if present
         if (urlCategory) newCategory = urlCategory;
         if (urlBrand) newBrand = urlBrand;
         if (urlModel) newModel = urlModel;
         if (urlModification) newModification = urlModification;
-        
+
         // Find subcategory by slug if specified
         if (urlSubcategory) {
-          const matchedSubcategory = subcategories.find(sub => sub.attributes.slug === urlSubcategory);
+          const matchedSubcategory = subcategories.find(
+            (sub) => sub.attributes.slug === urlSubcategory
+          );
           if (matchedSubcategory) newSubcategory = matchedSubcategory;
         }
-        
-        console.log("Search params found:", { 
-          category: urlCategory, 
+
+        console.log('Search params found:', {
+          category: urlCategory,
           subcategory: urlSubcategory,
           brand: urlBrand,
           model: urlModel,
           modification: urlModification,
-          search: searchQuery
+          search: searchQuery,
         });
       }
     }
-    
+
     // If no search parameters but we have a path category (e.g., /catalog/engines)
     if (!searchActive && !initialCategory) {
-      const pathParts = pathname.split("/");
+      const pathParts = pathname.split('/');
       if (pathParts.length >= 3 && pathParts[1] === 'catalog') {
         const categorySlug = pathParts[2];
         if (categorySlug) {
-          const category = categories.find(cat => cat.slug === categorySlug);
+          const category = categories.find((cat) => cat.slug === categorySlug);
           if (category) {
             newCategory = category.slug;
-            console.log("Path category found:", category.slug);
+            console.log('Path category found:', category.slug);
           }
         }
       }
     }
-    
+
     // Apply the determined filters (both to filters and form)
     setFilterCategory(newCategory);
     setFilterSubcategory(newSubcategory);
@@ -809,87 +979,92 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     setFilterModel(newModel);
     setFilterModification(newModification);
     setHasActiveSearch(searchActive);
-    
+
     // Also update form state to match
     setFormCategory(newCategory);
     setFormSubcategory(newSubcategory);
     setFormBrand(newBrand);
     setFormModel(newModel);
     setFormModification(newModification);
-    
+
     // Reset pagination when filters change
     setCurrentPage(1);
-    
-  }, [metadataLoaded, searchParams, pathname, initialCategory, categories, subcategories]);
+  }, [
+    metadataLoaded,
+    searchParams,
+    pathname,
+    initialCategory,
+    categories,
+    subcategories,
+  ]);
 
   // Use a separate useEffect to fetch products when filters change
   useEffect(() => {
     if (!metadataLoaded) return;
-    
+
     // Fetch products based on current filters
     fetchProducts();
-    
   }, [
-    metadataLoaded, 
-    filterCategory, 
-    filterSubcategory, 
-    filterBrand, 
-    filterModel, 
-    filterModification, 
+    metadataLoaded,
+    filterCategory,
+    filterSubcategory,
+    filterBrand,
+    filterModel,
+    filterModification,
     searchQuery,
     currentPage,
-    fetchProducts
+    fetchProducts,
   ]);
 
   // Generate select options for UI
   const categoryOptions = [
-    { value: "", label: "Все категории" },
+    { value: '', label: 'Все категории' },
     ...categories.map((cat) => ({
-    value: cat.slug,
-    label: cat.name,
-    }))
+      value: cat.slug,
+      label: cat.name,
+    })),
   ];
-  
+
   const subcategoryOptions = [
-    { value: "", label: "Все подкатегории" },
+    { value: '', label: 'Все подкатегории' },
     ...subcategories
-    .filter(sub => {
+      .filter((sub) => {
         if (!formCategory) return true;
-      
-      // Check if subcategory belongs to selected category
-      if (typeof sub.category === 'object' && sub.category) {
+
+        // Check if subcategory belongs to selected category
+        if (typeof sub.category === 'object' && sub.category) {
           return sub.category.slug === formCategory;
-      }
-      return false;
-    })
-    .map((sub) => ({
-      value: sub.id.toString(),
-      label: sub.attributes.name,
-      }))
+        }
+        return false;
+      })
+      .map((sub) => ({
+        value: sub.id.toString(),
+        label: sub.attributes.name,
+      })),
   ];
 
   const brandOptions = [
-    { value: "", label: "Все марки" },
+    { value: '', label: 'Все марки' },
     ...filteredBrands.map((brand) => ({
-    value: brand.slug,
-    label: brand.name,
-    }))
+      value: brand.slug,
+      label: brand.name,
+    })),
   ];
 
   const modelOptions = [
-    { value: "", label: "Все модели" },
+    { value: '', label: 'Все модели' },
     ...filteredModels.map((model) => ({
-    value: model.slug,
-    label: model.name,
-    }))
+      value: model.slug,
+      label: model.name,
+    })),
   ];
 
   const modificationOptions = [
-    { value: "", label: "Все модификации" },
+    { value: '', label: 'Все модификации' },
     ...filteredModifications.map((mod) => ({
-    value: mod.slug,
-    label: mod.name,
-    }))
+      value: mod.slug,
+      label: mod.name,
+    })),
   ];
 
   // Form handlers
@@ -912,14 +1087,14 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     // Don't reset brand, model, etc. when changing subcategory
     // as subcategories share the same universe as their parent category
   };
-  
+
   const handleBrandChange = (value: string) => {
     setFormBrand(value || null);
     // Reset downstream filters
     setFormModel(null);
     setFormModification(null);
   };
-  
+
   const handleModelChange = (value: string) => {
     setFormModel(value || null);
     // Reset downstream filters
@@ -929,42 +1104,46 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   // Apply search from form
   const handleSearch = () => {
     // Check if "All categories" is selected when other filters are active
-    const isSelectingAllCategories = formCategory === null && (formBrand || formModel || formModification);
-    const isPathBasedCategory = pathname.includes('/catalog/') && pathname.split('/').length > 2;
-    
+    const isSelectingAllCategories =
+      formCategory === null && (formBrand || formModel || formModification);
+    const isPathBasedCategory =
+      pathname.includes('/catalog/') && pathname.split('/').length > 2;
+
     // If selecting "All categories" when a path-based category is active,
     // navigate to the main catalog page with filters as query params
     if (isSelectingAllCategories && isPathBasedCategory) {
-      let queryParams = new URLSearchParams();
-      
+      const queryParams = new URLSearchParams();
+
       if (formBrand) queryParams.set('brand', formBrand);
       if (formModel) queryParams.set('model', formModel);
       if (formModification) queryParams.set('modification', formModification);
-      
-      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+
+      const queryString = queryParams.toString()
+        ? `?${queryParams.toString()}`
+        : '';
       router.push(`/catalog${queryString}`);
       return;
     }
-    
+
     // Apply form values to filters
     setFilterCategory(formCategory);
     setFilterSubcategory(formSubcategory);
     setFilterBrand(formBrand);
     setFilterModel(formModel);
     setFilterModification(formModification);
-    
+
     // Mark as active search (to show "nothing found" when appropriate)
     setHasActiveSearch(true);
-    
+
     // Reset to page 1 when searching
     setCurrentPage(1);
-    
-    console.log("Search applied:", {
+
+    console.log('Search applied:', {
       category: formCategory,
       subcategory: formSubcategory?.attributes.slug,
       brand: formBrand,
       model: formModel,
-      modification: formModification
+      modification: formModification,
     });
   };
 
@@ -987,12 +1166,15 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   };
 
   // Get selected category name for display
-  const selectedCategoryName = filterCategory 
-    ? categories.find(cat => cat.slug === filterCategory)?.name || "Каталог" 
-    : "Каталог продукции";
+  const selectedCategoryName = filterCategory
+    ? categories.find((cat) => cat.slug === filterCategory)?.name || 'Каталог'
+    : 'Каталог продукции';
 
   // Generate pagination items
-  const paginationItems = Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1);
+  const paginationItems = Array.from(
+    { length: Math.min(totalPages, 5) },
+    (_, i) => i + 1
+  );
 
   return (
     <div className="bg-[#F5F5F5]">
@@ -1013,9 +1195,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
             {filterCategory && (
               <>
                 <span className="mx-2 text-[#9A9A9A]">/</span>
-                <span className="text-[#3B3B3B]">
-                  {selectedCategoryName}
-                </span>
+                <span className="text-[#3B3B3B]">{selectedCategoryName}</span>
               </>
             )}
             {filterSubcategory && (
@@ -1033,11 +1213,11 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
             {filterSubcategory
               ? filterSubcategory.attributes.name
               : selectedCategoryName}
-            {searchParams?.get('search') && 
+            {searchParams?.get('search') && (
               <span className="font-normal text-lg ml-2">
-                (поиск: "{searchParams.get('search')}")
+                (поиск: &quot;{searchParams.get('search')}&quot;)
               </span>
-            }
+            )}
           </h1>
 
           {/* Mobile filter toggle button */}
@@ -1046,32 +1226,41 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
               onClick={toggleMobileFilters}
               className="flex items-center justify-center w-full p-3 bg-[#38AE34] text-white rounded-md font-medium"
             >
-              {showMobileFilters ? "Скрыть фильтры" : "Показать фильтры"}
-              <svg 
-                className={`ml-2 w-4 h-4 transition-transform ${showMobileFilters ? 'rotate-180' : ''}`}
+              {showMobileFilters ? 'Скрыть фильтры' : 'Показать фильтры'}
+              <svg
+                className={`ml-2 w-4 h-4 transition-transform ${
+                  showMobileFilters ? 'rotate-180' : ''
+                }`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </button>
           </div>
 
           {/* Filters section */}
-          <div className={`mb-6 md:mb-8 ${showMobileFilters || 'hidden md:block'}`}>
+          <div
+            className={`mb-6 md:mb-8 ${showMobileFilters || 'hidden md:block'}`}
+          >
             <div className="flex flex-col md:flex-row gap-3 md:gap-5">
               <Select
                 options={categoryOptions}
-                value={formCategory || ""}
+                value={formCategory || ''}
                 onChange={handleCategoryChange}
                 placeholder="Категория"
                 className="w-full md:flex-2"
               />
               <Select
                 options={subcategoryOptions}
-                value={formSubcategory ? formSubcategory.id.toString() : ""}
+                value={formSubcategory ? formSubcategory.id.toString() : ''}
                 onChange={handleSubcategoryChange}
                 placeholder="Подкатегория"
                 className="w-full md:flex-2"
@@ -1079,7 +1268,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
 
               <Select
                 options={brandOptions}
-                value={formBrand || ""}
+                value={formBrand || ''}
                 onChange={handleBrandChange}
                 placeholder="Марка"
                 className="w-full md:flex-2"
@@ -1087,7 +1276,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
 
               <Select
                 options={modelOptions}
-                value={formModel || ""}
+                value={formModel || ''}
                 onChange={handleModelChange}
                 placeholder="Модель"
                 className="w-full md:flex-2"
@@ -1095,7 +1284,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
 
               <Select
                 options={modificationOptions}
-                value={formModification || ""}
+                value={formModification || ''}
                 onChange={(value) => setFormModification(value || null)}
                 placeholder="Модификация"
                 className="w-full md:flex-2"
@@ -1122,7 +1311,8 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
               <div className="bg-red-50 p-4 rounded-lg text-red-600 text-center">
                 {error}
               </div>
-            ) : products.length === 0 && (hasActiveSearch || searchParams?.get('search')) ? (
+            ) : products.length === 0 &&
+              (hasActiveSearch || searchParams?.get('search')) ? (
               <div className="bg-[#F5F5F5] p-4 sm:p-8 rounded-lg text-center">
                 <h3 className="text-lg md:text-xl font-medium text-[#3B3B3B] mb-2">
                   Ничего не найдено
@@ -1152,7 +1342,9 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
                     <button
                       key={item}
                       className={`font-extrabold text-[16px] font-[Roboto_Condensed] ${
-                        item === currentPage ? "text-[#38AE34]" : "text-[#616161]"
+                        item === currentPage
+                          ? 'text-[#38AE34]'
+                          : 'text-[#616161]'
                       }`}
                       onClick={() => setCurrentPage(item)}
                     >

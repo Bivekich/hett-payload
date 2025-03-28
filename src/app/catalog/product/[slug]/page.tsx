@@ -1,13 +1,12 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import ProductDetail from "../../../../components/ProductDetail";
-import { boilerplateProducts } from "../../../../components/Catalog";
-import { Product } from "../../../../types/product";
-import { useParams } from "next/navigation";
-import { getProduct } from "../../../../services/catalogApi";
-import { Product as CmsProduct } from "../../../../types/catalog";
-import { API_URL } from "@/services/api";
+import React, { useState, useEffect } from 'react';
+import ProductDetail from '../../../../components/ProductDetail';
+import { Product } from '../../../../types/product';
+import { useParams } from 'next/navigation';
+import { getProduct } from '../../../../services/catalogApi';
+import { Product as CmsProduct } from '../../../../types/catalog';
+import { API_URL } from '@/services/api';
 
 // Helper function to convert CMS product to frontend product format
 const convertCmsProductToProduct = (cmsProduct: CmsProduct): Product => {
@@ -19,13 +18,13 @@ const convertCmsProductToProduct = (cmsProduct: CmsProduct): Product => {
     } else {
       imageUrl = cmsProduct.images[0].image?.url || '';
     }
-    
+
     // Make URL absolute if it's relative
     if (imageUrl && imageUrl.startsWith('/')) {
       imageUrl = `${API_URL}${imageUrl}`;
     }
   }
-  
+
   return {
     id: parseInt(cmsProduct.id),
     attributes: {
@@ -33,9 +32,18 @@ const convertCmsProductToProduct = (cmsProduct: CmsProduct): Product => {
       slug: cmsProduct.slug,
       article: cmsProduct.sku || '',
       price: cmsProduct.price ? cmsProduct.price.toString() : '',
-      brand: typeof cmsProduct.brand === 'string' ? cmsProduct.brand : cmsProduct.brand?.name || '',
-      model: typeof cmsProduct.model === 'string' ? cmsProduct.model : cmsProduct.model?.name || '',
-      modification: typeof cmsProduct.modification === 'string' ? cmsProduct.modification : cmsProduct.modification?.name || '',
+      brand:
+        typeof cmsProduct.brand === 'string'
+          ? cmsProduct.brand
+          : cmsProduct.brand?.name || '',
+      model:
+        typeof cmsProduct.model === 'string'
+          ? cmsProduct.model
+          : cmsProduct.model?.name || '',
+      modification:
+        typeof cmsProduct.modification === 'string'
+          ? cmsProduct.modification
+          : cmsProduct.modification?.name || '',
       oem: cmsProduct.oem || '',
       image: {
         data: {
@@ -46,30 +54,33 @@ const convertCmsProductToProduct = (cmsProduct: CmsProduct): Product => {
       },
       // Pass the rich text description directly
       description: cmsProduct.description || undefined,
-      
+
       // Map specifications from CMS
-      specifications: cmsProduct.specifications?.map(spec => ({
-        name: spec.name,
-        value: spec.value
-      })) || [],
-      
+      specifications:
+        cmsProduct.specifications?.map((spec) => ({
+          name: spec.name,
+          value: spec.value,
+        })) || [],
+
       // Map marketplace links
       marketplaceLinks: {
         ozon: cmsProduct.marketplaceLinks?.ozon || '',
         wildberries: cmsProduct.marketplaceLinks?.wildberries || '',
-        others: cmsProduct.marketplaceLinks?.others?.map(m => ({
-          name: m.name,
-          url: m.url,
-          logo: m.logo
-        })) || []
+        others:
+          cmsProduct.marketplaceLinks?.others?.map((m) => ({
+            name: m.name,
+            url: m.url,
+            logo: m.logo,
+          })) || [],
       },
-      
+
       // Map distributors
-      distributors: cmsProduct.distributors?.map(d => ({
-        name: d.name,
-        url: d.url,
-        location: d.location
-      })) || []
+      distributors:
+        cmsProduct.distributors?.map((d) => ({
+          name: d.name,
+          url: d.url,
+          location: d.location,
+        })) || [],
     },
   };
 };
@@ -87,7 +98,7 @@ const ProductPage = () => {
     const fetchProduct = async () => {
       try {
         setIsLoading(true);
-        
+
         // Try fetching from CMS
         try {
           // For a single product, we need more details, so we'll use depth=2
@@ -99,17 +110,17 @@ const ProductPage = () => {
             setIsLoading(false);
             return;
           } else {
-            setError("Товар не найден");
+            setError('Товар не найден');
           }
         } catch (error) {
-          console.error("Error fetching product from CMS:", error);
-          setError("Ошибка загрузки товара");
+          console.error('Error fetching product from CMS:', error);
+          setError('Ошибка загрузки товара');
         }
-        
+
         setIsLoading(false);
       } catch (err) {
-        console.error("Error fetching product:", err);
-        setError("Ошибка загрузки товара");
+        console.error('Error fetching product:', err);
+        setError('Ошибка загрузки товара');
         setIsLoading(false);
       }
     };
