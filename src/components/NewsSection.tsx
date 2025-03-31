@@ -119,7 +119,7 @@ const NewsSection = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {currentNews.map((news) => (
               <div key={news.id} className="flex flex-col">
-                <Link href={`/news/${news.slug}`} className="h-full">
+                <Link href={`/news/${news.slug}/${news.id}`} className="h-full">
                   <NewsCard
                     imageUrl={news.previewImage?.url ? 
                       (news.previewImage.url.startsWith('/') ? 

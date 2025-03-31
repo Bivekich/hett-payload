@@ -104,7 +104,7 @@ const NewsCatalog: React.FC = () => {
                   console.log(`News item slug: ${newsItem.slug}`);
                   return (
                     <Link
-                      href={`/news/${newsItem.slug}`}
+                      href={`/news/${newsItem.slug}/${newsItem.id}`}
                       key={newsItem.id}
                     >
                       <NewsCard

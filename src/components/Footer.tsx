@@ -296,7 +296,7 @@ export default function Footer() {
                 {customPages.map((page) => (
                   <Link
                     key={page.id}
-                    href={`/pages/${page.slug}`}
+                    href={`/pages/${page.slug}/${page.id}`}
                     className="mt-3 md:mt-4 hover:text-[#38AE34] transition-colors cursor-pointer"
                     onClick={() => handleNavigation()}
                   >

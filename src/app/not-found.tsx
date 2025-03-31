@@ -1,16 +1,23 @@
+import Link from 'next/link';
+
 export default function NotFound() {
   return (
-    <div className="flex min-h-[500px] flex-col items-center justify-center p-6 text-center">
-      <h2 className="text-3xl font-bold mb-4">404 - Page Not Found</h2>
-      <p className="mb-8 text-gray-600 max-w-md">
-        The page you are looking for doesn't exist or has been moved.
+    <div className="flex min-h-[calc(100vh-200px)] flex-col items-center justify-center bg-[#181818] p-6 text-center text-white">
+      <h1 className="text-8xl font-extrabold text-[#38AE34] mb-4 roboto-condensed-bold">
+        404
+      </h1>
+      <h2 className="text-3xl md:text-4xl font-bold mb-4 roboto-condensed-bold">
+        Страница не найдена
+      </h2>
+      <p className="mb-8 text-gray-400 max-w-md roboto-condensed-regular">
+        К сожалению, страница, которую вы ищете, не существует или была перемещена.
       </p>
-      <a 
+      <Link 
         href="/" 
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+        className="inline-flex items-center border border-transparent hover:bg-transparent hover:border-[#38AE34] justify-center px-6 py-3 bg-[#38AE34] text-white font-bold hover:bg-[#2d8a2b] transition-colors roboto-condensed-bold uppercase"
       >
-        Return to Home
-      </a>
+        Вернуться на главную
+      </Link>
     </div>
   );
 } 

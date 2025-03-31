@@ -1035,7 +1035,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
               : selectedCategoryName}
             {searchParams?.get('search') && 
               <span className="font-normal text-lg ml-2">
-                (поиск: "{searchParams.get('search')}")
+              
               </span>
             }
           </h1>
@@ -1044,7 +1044,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
           <div className="flex md:hidden mb-4">
             <button
               onClick={toggleMobileFilters}
-              className="flex items-center justify-center w-full p-3 bg-[#38AE34] text-white rounded-md font-medium"
+              className="flex items-center justify-center w-full p-3 bg-[#38AE34] text-white font-medium"
             >
               {showMobileFilters ? "Скрыть фильтры" : "Показать фильтры"}
               <svg 

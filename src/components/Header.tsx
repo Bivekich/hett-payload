@@ -134,7 +134,7 @@ function MobileMenu({ isOpen, onClose, customPages, categories }: MobileMenuProp
               {customPages.map((page) => (
                 <Link
                   key={page.id}
-                  href={`/pages/${page.slug}`}
+                  href={`/pages/${page.slug}/${page.id}`}
                   className="py-3 text-[#38AE34] hover:text-white transition-colors cursor-pointer text-[14px] font-medium roboto-condensed-medium"
                   onClick={() => handleNavigation()}
                 >
@@ -231,6 +231,7 @@ function MobileMenu({ isOpen, onClose, customPages, categories }: MobileMenuProp
 export default function Header() {
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileCatalogOpen, setIsMobileCatalogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const searchRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -302,7 +303,7 @@ export default function Header() {
     { text: "О компании", href: "/about" },
     ...customPages.map(page => ({
       text: page.title,
-      href: `/pages/${page.slug}`
+      href: `/pages/${page.slug}/${page.id}`
     }))
   ];
 
@@ -495,7 +496,7 @@ export default function Header() {
         </div>
 
         {/* Mobile Header - Visible only on mobile */}
-        <div className="md:hidden">
+        <div className="md:hidden relative">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <Link href="/" className="flex self-stretch relative group">
@@ -509,17 +510,18 @@ export default function Header() {
             </Link>
 
             {/* Mobile Actions */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center">
               {/* Catalog Button */}
               <button
-                className="flex items-center bg-[#38AE34] text-white px-4 py-2"
+                className="flex items-center bg-[#38AE34] text-white px-4 py-2 uppercase font-bold roboto-condensed-bold text-sm"
                 onClick={() => {
+                  console.log("Mobile catalog button clicked, current state:", isMobileCatalogOpen);
                   // Close mobile menu if open
                   if (isMobileMenuOpen) {
                     setIsMobileMenuOpen(false);
                   }
                   // Toggle catalog dropdown
-                  // You can implement this functionality as needed
+                  setIsMobileCatalogOpen(!isMobileCatalogOpen);
                 }}
               >
                 <svg
@@ -535,7 +537,7 @@ export default function Header() {
                     fill="currentColor"
                   />
                 </svg>
-                КАТАЛОГ
+                Каталог
               </button>
 
               {/* Social Links and Menu Button */}
@@ -643,6 +645,75 @@ export default function Header() {
             customPages={customPages}
             categories={categories}
           />
+        )}
+
+        {/* Mobile Catalog Dropdown */}
+        {isMobileCatalogOpen && (
+          <div className="fixed top-0 left-0 right-0 bg-white shadow-lg z-50 p-6 md:hidden max-h-[90vh] overflow-y-auto">
+            {/* Close button */}
+            <button
+              onClick={() => setIsMobileCatalogOpen(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-[#38AE34] transition-colors"
+              aria-label="Close catalog menu"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M18 6L6 18M6 6L18 18"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            
+            <h3 className="text-[#555555] font-bold text-lg uppercase roboto-condensed-bold mb-4">Категории</h3>
+            
+            <div className="flex flex-col gap-3 max-w-[1280px] mx-auto">
+              {categories.length > 0 ? categories.map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/catalog/${category.slug}`}
+                  className="flex items-center py-2 w-full hover:bg-gray-50 transition-colors rounded-md overflow-hidden"
+                  onClick={() => setIsMobileCatalogOpen(false)}
+                >
+                  {/* Compact image thumbnail */}
+                  <div className="w-12 h-12 mr-3 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                    {category.image?.url ? (
+                      <img 
+                        src={category.image.url.startsWith('/') ? `${API_URL}${category.image.url}` : category.image.url}
+                        alt={category.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300">
+                          <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                          <circle cx="9" cy="9" r="2"></circle>
+                          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Category name */}
+                  <span className="text-[#555555] hover:text-[#38AE34] transition-colors text-[14px] font-medium roboto-condensed-medium">
+                    {category.name}
+                  </span>
+                </Link>
+              )) : (
+                <div className="py-3 text-gray-500 text-center">
+                  Загрузка категорий...
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </header>

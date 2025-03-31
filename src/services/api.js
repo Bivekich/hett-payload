@@ -141,14 +141,16 @@ export const getFooterData = async () => {
 };
 
 export const getArticles = async (page = 1, pageSize = 9) => {
-  const response = await fetch(
-    `${API_URL}/api/news-items?populate=*&sort=date:desc&pagination[page]=${page}&pagination[pageSize]=${pageSize}`,
-    {
-      headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
-      },
-    }
-  );
+  // If no pagination parameters are provided, fetch all articles
+  const url = page && pageSize
+    ? `${API_URL}/api/news-items?populate=*&sort=date:desc&pagination[page]=${page}&pagination[pageSize]=${pageSize}`
+    : `${API_URL}/api/news-items?populate=*&sort=date:desc&limit=1000`; // Fetch up to 1000 articles
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${API_TOKEN}`,
+    },
+  });
   if (!response.ok) throw new Error("Failed to fetch articles");
   return response.json();
 };
@@ -630,8 +632,12 @@ export const searchProducts = async (query) => {
 export const getCustomPage = async (slug) => {
   try {
     console.log(`Fetching custom page with slug: ${slug}`);
+    
+    // Use encodeURIComponent to safely encode the slug for URL inclusion
+    const encodedSlug = encodeURIComponent(slug);
+    
     const response = await fetch(
-      `${API_URL}/api/custom-pages?filters[slug][$eq]=${slug}&filters[status][$eq]=published&depth=2`,
+      `${API_URL}/api/custom-pages?filters[slug][equals]=${encodedSlug}&filters[status][equals]=published&depth=2`,
       {
         headers: {
           ...(API_TOKEN ? { Authorization: `Bearer ${API_TOKEN}` } : {}),
@@ -650,6 +656,7 @@ export const getCustomPage = async (slug) => {
     
     // Payload CMS returns docs array
     if (data.docs && data.docs.length > 0) {
+      console.log(`Found page with slug '${slug}':`, data.docs[0].title);
       return data.docs[0];
     } else {
       console.error("No custom page found with slug:", slug);
@@ -661,38 +668,42 @@ export const getCustomPage = async (slug) => {
   }
 };
 
-export const getCustomPages = async () => {
+// Modify getCustomPages to fetch full data and support fetching all pages
+export const getCustomPages = async (page = 1, pageSize = 10) => {
   try {
-    const response = await fetch(
-      `${API_URL}/api/custom-pages?filters[status][$eq]=published&depth=1&limit=100`,
-      {
-        headers: {
-          ...(API_TOKEN ? { Authorization: `Bearer ${API_TOKEN}` } : {}),
-        },
-      }
-    );
+    // Construct URL based on pagination parameters
+    const url = page && pageSize
+      ? `${API_URL}/api/custom-pages?filters[status][equals]=published&depth=2&pagination[page]=${page}&pagination[pageSize]=${pageSize}&sort=title:asc`
+      : `${API_URL}/api/custom-pages?filters[status][equals]=published&depth=2&limit=1000&sort=title:asc`; // Fetch all (up to 1000) with depth=2
+      
+    console.log(`Fetching custom pages from URL: ${url}`);
+
+    const response = await fetch(url, {
+      headers: {
+        ...(API_TOKEN ? { Authorization: `Bearer ${API_TOKEN}` } : {}),
+      },
+    });
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("API Error:", errorText);
+      console.error("API Error fetching custom pages:", errorText);
       throw new Error(`Failed to fetch custom pages: ${response.status}`);
     }
     
     const data = await response.json();
+    console.log("Custom pages raw response:", data);
     
-    // Payload CMS returns docs array
+    // Return the full documents array, or an empty array if none exist
     if (data.docs && data.docs.length > 0) {
-      return data.docs.map(page => ({
-        id: page.id,
-        title: page.title,
-        slug: page.slug
-      }));
+      // No longer mapping to limited fields, return full objects
+      return data.docs; 
     } else {
       return [];
     }
   } catch (error) {
     console.error("Error in getCustomPages:", error);
-    return [];
+    // Return empty array on error to prevent crashes in Header/Footer
+    return []; 
   }
 };
 

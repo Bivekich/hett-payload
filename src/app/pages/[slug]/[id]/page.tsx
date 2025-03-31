@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, notFound } from "next/navigation";
 import CustomPage from "@/components/custom-pages/CustomPage";
-import { getCustomPage } from "@/services/api";
+import { getCustomPages } from "@/services/api";
 import { lexicalToHtml } from "@/utils/lexicalToHtml";
 
 // Define a type for the LexicalNode content
@@ -66,7 +66,7 @@ interface ProcessedContentSection {
 
 export default function CustomPageRoute() {
   const params = useParams();
-  const slug = params.slug as string;
+  const id = params.id as string;
   
   const [pageData, setPageData] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,21 +75,40 @@ export default function CustomPageRoute() {
   const [contentSections, setContentSections] = useState<ProcessedContentSection[]>([]);
   
   useEffect(() => {
-    async function fetchPage() {
+    async function fetchAndProcessPageData() {
+      if (!id) {
+        console.log("No ID found in params, waiting...");
+        return;
+      }
+      
       try {
         setLoading(true);
-        console.log(`Rendering custom page for slug: ${slug}`);
-        const data = await getCustomPage(slug);
+        setError(null);
+        console.log(`Fetching all custom pages (full data) to find page with id: ${id}`);
+        
+        const allPagesData = await getCustomPages(0, 0);
+        console.log('Fetched all custom pages data:', allPagesData);
+
+        if (!allPagesData || allPagesData.length === 0) {
+          console.error(`No custom pages found or empty response from API`);
+          setError("Could not load page data.");
+          return;
+        }
+
+        console.log(`Found ${allPagesData.length} custom pages in total.`);
+        
+        const data = allPagesData.find(page => String(page.id) === String(id));
+        console.log('Found full page data by ID:', data);
 
         if (!data) {
-          console.error(`Page not found for slug: ${slug}`);
+          console.error(`Page not found with id: ${id} among fetched custom pages.`);
           notFound();
           return;
         }
         
+        console.log("Processing full page data for:", data.title, data.slug);
         setPageData(data);
         
-        // Process hero section
         if (data.heroSection) {
           setHeroSection({
             enabled: data.heroSection.enabled !== false,
@@ -99,11 +118,11 @@ export default function CustomPageRoute() {
               alt: data.heroSection.image.alt || `${data.title} image`
             } : undefined
           });
+        } else {
+          setHeroSection(undefined);
         }
         
-        // Process content sections
         const sections = (data.contentSections || []).map((section: ContentSection) => {
-          // Process section content to HTML
           let sectionHtmlContent = '';
           if (section.content) {
             try {
@@ -113,7 +132,6 @@ export default function CustomPageRoute() {
             }
           }
           
-          // Process section image if present
           const sectionImage = section.image ? {
             url: section.image.url,
             alt: section.image.alt || 'Section image'
@@ -128,20 +146,20 @@ export default function CustomPageRoute() {
             imagePosition: section.imagePosition || 'right',
             backgroundColor: section.backgroundColor || 'transparent',
             padding: section.padding || 'medium'
-          };
+          } as ProcessedContentSection;
         });
-        
         setContentSections(sections);
-      } catch (error) {
-        console.error(`Error rendering page for slug ${slug}:`, error);
-        setError(`Error loading page: ${error instanceof Error ? error.message : String(error)}`);
+        
+      } catch (err) {
+        console.error(`Error fetching or processing custom page for id ${id}:`, err);
+        setError(`Failed to load page: ${err instanceof Error ? err.message : String(err)}`);
       } finally {
         setLoading(false);
       }
     }
     
-    fetchPage();
-  }, [slug]);
+    fetchAndProcessPageData();
+  }, [id]);
   
   if (loading) {
     return <div className="p-10 text-center">Loading page...</div>;
@@ -152,7 +170,9 @@ export default function CustomPageRoute() {
   }
 
   if (!pageData) {
-    return notFound();
+    console.log("Page data is null after load, rendering not found.");
+    notFound();
+    return null;
   }
 
   return (

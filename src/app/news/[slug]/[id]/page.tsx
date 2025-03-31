@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, notFound } from "next/navigation";
-import HettAutomotiveArticle from "../../../components/news/HettAutomotiveArticle";
-import { getArticle } from "@/services/api";
+import HettAutomotiveArticle from "../../../../components/news/HettAutomotiveArticle";
+import { getArticles } from "@/services/api";
 import { lexicalToHtml } from "@/utils/lexicalToHtml";
 
 // Define a type for the LexicalNode content
@@ -57,7 +57,7 @@ interface ArticleData {
 
 export default function NewsArticlePage() {
   const params = useParams();
-  const slug = params.slug as string;
+  const id = params.id as string;
   
   const [newsItem, setNewsItem] = useState<ArticleData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,14 +68,30 @@ export default function NewsArticlePage() {
   const [date, setDate] = useState('');
   
   useEffect(() => {
-    async function fetchArticle() {
+    async function fetchArticles() {
       try {
         setLoading(true);
-        console.log(`Rendering article page for slug: ${slug}`);
-        const articleData = await getArticle(slug);
+        console.log(`Rendering article page for id: ${id}`);
+        
+        // Fetch all articles without pagination
+        const articlesData = await getArticles(0, 0);
+        console.log('Fetched articles data:', articlesData);
+
+        if (!articlesData || !articlesData.docs) {
+          console.error(`No articles found`);
+          notFound();
+          return;
+        }
+
+        console.log(`Found ${articlesData.docs.length} articles`);
+        console.log('Looking for article with id:', id);
+        
+        // Find the article with the matching id
+        const articleData = articlesData.docs.find(article => String(article.id) === String(id));
+        console.log('Found article:', articleData);
 
         if (!articleData) {
-          console.error(`Article not found for slug: ${slug}`);
+          console.error(`Article not found with id: ${id}`);
           notFound();
           return;
         }
@@ -147,15 +163,15 @@ export default function NewsArticlePage() {
         }
         
       } catch (error) {
-        console.error(`Error rendering article page for slug ${slug}:`, error);
+        console.error(`Error rendering article page for id ${id}:`, error);
         setError(`Error loading article: ${error instanceof Error ? error.message : String(error)}`);
       } finally {
         setLoading(false);
       }
     }
     
-    fetchArticle();
-  }, [slug]);
+    fetchArticles();
+  }, [id]);
   
   if (loading) {
     return <div className="p-10 text-center">Loading article...</div>;
@@ -178,4 +194,4 @@ export default function NewsArticlePage() {
       contentSections={contentSections}
     />
   );
-}
+} 
