@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
-import Image from "next/image";
 import CategoryCard from "./CategoryCard";
 import Button from "./uiKit/Button";
 import Select from "./uiKit/Select";
@@ -38,7 +37,6 @@ const ProductSearchSection = () => {
   const [categoryCards, setCategoryCards] = useState<CategoryCardData[]>([]);
   
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Fetch filter options when component mounts
   useEffect(() => {
@@ -133,7 +131,6 @@ const ProductSearchSection = () => {
         setIsLoading(false);
       } catch (err) {
         console.error('Error fetching filter options:', err);
-        setError('Ошибка загрузки фильтров');
         setIsLoading(false);
       }
     };

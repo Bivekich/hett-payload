@@ -82,7 +82,7 @@ const BuyButtons: React.FC<BuyButtonsProps> = ({
               rel="noopener noreferrer"
               className="border border-[#38AE34] flex items-center justify-center gap-4 px-6 py-4 hover:bg-gray-50 w-fit"
             >
-              <img src={ozonLogo.src} alt="Ozon" className="h-6 w-auto" />
+              <Image src={ozonLogo} alt="Ozon" className="h-6 w-auto" width={60} height={24} />
               <span className="text-[16px] font-semibold font-[Roboto_Condensed]">
                 Купить на ozon
               </span>
@@ -97,7 +97,7 @@ const BuyButtons: React.FC<BuyButtonsProps> = ({
               rel="noopener noreferrer"
               className="border border-[#38AE34] flex items-center justify-center gap-4 px-6 py-4 hover:bg-gray-50 w-fit"
             >
-              <img src={wbLogo.src} alt="Wildberries" className="h-6 w-auto" />
+              <Image src={wbLogo} alt="Wildberries" className="h-6 w-auto" width={60} height={24} />
               <span className="text-[16px] font-semibold font-[Roboto_Condensed]">
                 Купить на wildberries
               </span>
@@ -141,7 +141,7 @@ const BuyButtons: React.FC<BuyButtonsProps> = ({
                     className="flex items-center gap-3 p-4 border border-gray-200 bg-white hover:bg-gray-50 hover:border-[#38AE34] transition-colors"
                   >
                     <div className="w-16 flex items-center justify-center">
-                      <img src={ozonLogo.src} alt="Ozon" className="h-5 max-w-[60px] object-contain" />
+                      <Image src={ozonLogo} alt="Ozon" className="h-5 max-w-[60px] object-contain" width={60} height={20} />
                     </div>
                     <div className="flex-1">
                       <span className="font-medium text-[#3B3B3B]">Ozon</span>
@@ -162,7 +162,7 @@ const BuyButtons: React.FC<BuyButtonsProps> = ({
                     className="flex items-center gap-3 p-4 border border-gray-200 bg-white hover:bg-gray-50 hover:border-[#38AE34] transition-colors"
                   >
                     <div className="w-16 flex items-center justify-center">
-                      <img src={wbLogo.src} alt="Wildberries" className="h-5 max-w-[90px] object-contain" />
+                      <Image src={wbLogo} alt="Wildberries" className="h-5 max-w-[90px] object-contain" width={90} height={20} />
                     </div>
                     <div className="flex-1">
                       <span className="font-medium text-[#3B3B3B]">Wildberries</span>
@@ -185,10 +185,13 @@ const BuyButtons: React.FC<BuyButtonsProps> = ({
                   >
                     <div className="w-16 flex items-center justify-center">
                       {marketplace.logo && marketplace.logo !== "" ? (
-                        <img 
+                        <Image 
                           src={marketplace.logo} 
                           alt={marketplace.name} 
-                          className="h-5 max-w-[60px] object-contain" 
+                          className="h-5 max-w-[60px] object-contain"
+                          width={60}
+                          height={20}
+                          unoptimized
                         />
                       ) : (
                         <div className="w-12 h-5 bg-gray-200"></div>

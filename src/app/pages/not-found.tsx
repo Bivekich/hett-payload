@@ -6,7 +6,7 @@ export default function PagesNotFound() {
     <div className="flex min-h-[500px] flex-col items-center justify-center p-6 text-center">
       <h2 className="text-3xl font-bold mb-4">Page Not Found</h2>
       <p className="mb-8 text-gray-600 max-w-md">
-        We couldn't find the custom page you're looking for.
+        We couldn&apos;t find the custom page you&apos;re looking for.
       </p>
       <Link 
         href="/" 

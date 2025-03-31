@@ -12,7 +12,7 @@ export default function SlugNotFound() {
     <div className="flex min-h-[500px] flex-col items-center justify-center p-6 text-center">
       <h2 className="text-3xl font-bold mb-4">Page Not Found</h2>
       <p className="mb-2 text-gray-600 max-w-md">
-        We couldn't find the page "{slug}".
+        We couldn&apos;t find the page &quot;{slug}&quot;.
       </p>
       <p className="mb-8 text-gray-500 text-sm">
         The page may have been removed or the URL might be incorrect.

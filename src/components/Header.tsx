@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { debounce } from "lodash";
 import logo from "../assets/HettLogo.svg";
 import Button from "./uiKit/Button";
 import TelegramIcon from "../assets/icons/tgIcon.svg";
@@ -13,8 +12,8 @@ import React from "react";
 import CatalogDropdownMenu from "./CatalogDropdownMenu";
 import VinRequestModal from "./uiKit/VinRequestModal";
 import { getCustomPages, getSettings } from "@/services/api";
-import { getCategories, searchCatalog } from "@/services/catalogApi";
-import { Category, Product } from "@/types/catalog";
+import { getCategories } from "@/services/catalogApi";
+import { Category } from "@/types/catalog";
 import { useRouter } from "next/navigation";
 import { API_URL } from "@/services/api";
 
@@ -398,10 +397,13 @@ export default function Header() {
                   >
                     <div className="w-5 aspect-square [&>img]:hover:brightness-100 [&>img]:hover:saturate-100 [&>img]:hover:[filter:invert(56%)_sepia(53%)_saturate(652%)_hue-rotate(93deg)_brightness(95%)_contrast(101%)]">
                       {link.icon?.url ? (
-                        <img
+                        <Image
                           src={link.icon.url}
                           alt={link.icon.alt || link.platform}
                           className="w-full h-full transition-all"
+                          width={20}
+                          height={20}
+                          unoptimized
                         />
                       ) : (
                         <SocialIconComponent platform={link.platform} />
@@ -686,10 +688,12 @@ export default function Header() {
                   {/* Compact image thumbnail */}
                   <div className="w-12 h-12 mr-3 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
                     {category.image?.url ? (
-                      <img 
+                      <Image 
                         src={category.image.url.startsWith('/') ? `${API_URL}${category.image.url}` : category.image.url}
                         alt={category.name}
                         className="w-full h-full object-cover"
+                        width={48}
+                        height={48}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gray-100">

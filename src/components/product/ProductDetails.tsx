@@ -11,6 +11,24 @@ interface ProductDetailsProps {
   product: Product;
 }
 
+// Define interfaces for specifications and marketplace data
+interface Specification {
+  name: string;
+  value: string;
+}
+
+interface MarketplaceLink {
+  name: string;
+  url: string;
+  logo?: string;
+}
+
+interface Distributor {
+  name: string;
+  url: string;
+  location?: string;
+}
+
 const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
   const { 
     oem, 
@@ -45,7 +63,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
 
   // Add any additional specifications from CMS
   if (specifications && specifications.length > 0) {
-    specifications.forEach((spec: any) => {
+    specifications.forEach((spec: Specification) => {
       if (spec.name && spec.name.toLowerCase() !== 'oem') { // Skip OEM as it's displayed separately
         characteristics.push({
           label: spec.name,
@@ -60,14 +78,14 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
   const wildberriesUrl = marketplaceLinks?.wildberries || '';
   
   // Format other marketplaces
-  const otherMarketplaces = marketplaceLinks?.others?.map((marketplace: any) => ({
+  const otherMarketplaces = marketplaceLinks?.others?.map((marketplace: MarketplaceLink) => ({
     name: marketplace.name,
     url: marketplace.url,
     logo: marketplace.logo
   })) || [];
 
   // Format distributors
-  const formattedDistributors = distributors?.map((distributor: any) => ({
+  const formattedDistributors = distributors?.map((distributor: Distributor) => ({
     name: distributor.name,
     url: distributor.url,
     location: distributor.location

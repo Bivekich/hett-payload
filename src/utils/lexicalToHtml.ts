@@ -146,7 +146,7 @@ export function lexicalToHtml(content: LexicalContent): string {
           if (listItem.type !== "listitem") return "";
           
           // Process children of list item
-          let textContent = processListItemChildren(listItem.children);
+          const textContent = processListItemChildren(listItem.children);
           
           // Skip empty list items
           if (!textContent.trim()) return "";

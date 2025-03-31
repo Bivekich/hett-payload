@@ -1,5 +1,6 @@
 import React from "react";
 import { API_URL } from "@/services/api";
+import Image from "next/image";
 
 // Define a type for lexical content
 interface LexicalContent {
@@ -185,11 +186,13 @@ const ArticleContent: React.FC<ArticleContentProps> = ({ contentSections }) => {
             {/* Optional Image */}
             {section.image && (
               <div className="mt-6 md:mt-0 md:w-1/2 lg:w-2/5">
-                <div className="overflow-hidden rounded-md shadow-sm">
-                  <img 
+                <div className="overflow-hidden rounded-md shadow-sm relative aspect-[4/3]">
+                  <Image 
                     src={section.image.url.startsWith('/') ? `${API_URL}${section.image.url}` : section.image.url} 
                     alt={section.image.alt || 'Article image'} 
-                    className="w-full h-auto object-cover"
+                    className="object-cover"
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
                 </div>
               </div>

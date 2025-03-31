@@ -5,7 +5,7 @@ import Container from "./Container";
 import ProductCard from "./uiKit/ProductCard";
 import ProductDetails from "./product/ProductDetails";
 import { Product } from "../types/product";
-import { getProducts, getCatalogProducts } from '../services/catalogApi';
+import { getCatalogProducts } from '../services/catalogApi';
 import { convertCmsProductToProduct } from "./Catalog";
 
 interface ProductDetailProps {
@@ -14,7 +14,6 @@ interface ProductDetailProps {
 
 const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   
   // Extract brand and model for filtering related products
   const { brand, model } = product.attributes;
@@ -23,8 +22,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
   useEffect(() => {
     const fetchRelatedProducts = async () => {
       try {
-        setIsLoading(true);
-        
         // We need to find the brand and model IDs if we have their names
         // This might require additional API calls if we don't have the mapping available
 
@@ -66,10 +63,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
         
         // Limit to 4 products
         setRelatedProducts(filtered.slice(0, 4));
-        setIsLoading(false);
       } catch (err) {
         console.error('Error fetching related products:', err);
-        setIsLoading(false);
         setRelatedProducts([]);
       }
     };

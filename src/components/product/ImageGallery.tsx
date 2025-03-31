@@ -43,13 +43,17 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   return (
     <div className="flex flex-col justify-start min-w-[240px] w-[590px] max-md:max-w-full">
       {/* Main Product Image - Fixed height container */}
-      <div className="flex items-center justify-center bg-white h-[400px] border border-gray-100">
+      <div className="flex items-center justify-center bg-white h-[400px] border border-gray-100 relative">
         {hasRealImage ? (
-          // Use a regular img tag for remote URLs to avoid Next.js Image restrictions
-          <img
+          // Use Image component with unoptimized for external URLs
+          <Image
             src={formattedMainImageUrl}
             alt="Product"
             className="max-h-full max-w-full object-contain p-4"
+            width={400}
+            height={400}
+            style={{ objectFit: 'contain' }}
+            unoptimized={!formattedMainImageUrl.startsWith('/')}
           />
         ) : (
           <Image
@@ -77,11 +81,15 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
               onClick={() => setSelectedThumbnail(thumbnail.index)}
             >
               {thumbnail.url ? (
-                <img
-                  src={thumbnail.url}
-                  alt={`Thumbnail ${thumbnail.index + 1}`}
-                  className="max-h-[70px] max-w-[70px] object-contain"
-                />
+                <div className="relative w-[70px] h-[70px]">
+                  <Image
+                    src={thumbnail.url}
+                    alt={`Thumbnail ${thumbnail.index + 1}`}
+                    className="object-contain"
+                    fill
+                    unoptimized={!thumbnail.url.startsWith('/')}
+                  />
+                </div>
               ) : (
                 <div className="w-12 h-12 bg-gray-200"></div>
               )}

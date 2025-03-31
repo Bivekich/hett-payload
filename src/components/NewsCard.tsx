@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 
 interface NewsCardProps {
   imageUrl?: string;
@@ -25,12 +26,16 @@ const NewsCard: React.FC<NewsCardProps> = ({
       className={`flex flex-col grow p-4 text-base leading-snug ${bgColorClass} hover:shadow-lg transition-all duration-300 h-full cursor-pointer`}
     >
       {imageUrl && (
-        <img
-          loading="lazy"
-          src={imageUrl}
-          alt="News article thumbnail"
-          className="object-cover w-full aspect-[2.11]"
-        />
+        <div className="relative w-full aspect-[2.11]">
+          <Image
+            loading="lazy"
+            src={imageUrl}
+            alt="News article thumbnail"
+            className="object-cover"
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+        </div>
       )}
       <div className={`self-start mt-5 text-[16px] ${dateColorClass}`}>
         {date}

@@ -5,9 +5,6 @@ import { getCategories } from '../services/catalogApi';
 import { Category } from '../types/catalog';
 import { API_URL } from '@/services/api';
 
-// Icons for categories (these should be replaced with actual SVGs)
-import { IconAuto } from "../assets/icons";
-
 interface CatalogDropdownMenuProps {
   className?: string;
 }

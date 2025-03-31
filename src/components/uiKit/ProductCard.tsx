@@ -89,12 +89,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       className="bg-white rounded-none overflow-hidden cursor-pointer hover:shadow-md transition-all flex flex-col h-full"
     >
       {/* Fixed height container for consistent image size */}
-      <div className="flex items-center justify-center h-[200px] p-4">
+      <div className="flex items-center justify-center h-[200px] p-4 relative">
         {hasRealImage ? (
-          <img
+          <Image
             src={imageUrl}
             alt={name}
-            className="max-h-full max-w-full object-contain"
+            className="object-contain"
+            width={180}
+            height={180}
+            style={{ objectFit: 'contain' }}
+            unoptimized={!imageUrl.startsWith('/')}
           />
         ) : (
           <Image

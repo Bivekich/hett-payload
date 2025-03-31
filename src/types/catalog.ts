@@ -17,11 +17,23 @@ export interface BaseContent {
   updatedAt: string;
 }
 
+// Rich text content type
+export interface RichTextContent {
+  root: {
+    children: unknown[];
+    direction: string | null;
+    format: string;
+    indent: number;
+    type: string;
+    version: number;
+  };
+}
+
 // Category types
 export interface Category extends BaseContent {
   name: string;
   slug: string;
-  description?: any; // Rich text content
+  description?: RichTextContent; // Rich text content
   image?: Media;
   icon?: Media;
   featured: boolean;
@@ -33,7 +45,7 @@ export interface Category extends BaseContent {
 export interface Subcategory extends BaseContent {
   name: string;
   slug: string;
-  description?: any; // Rich text content
+  description?: RichTextContent; // Rich text content
   category: Category | string;
   image?: Media;
   icon?: Media;
@@ -46,7 +58,7 @@ export interface Subcategory extends BaseContent {
 export interface Brand extends BaseContent {
   name: string;
   slug: string;
-  description?: any; // Rich text content
+  description?: RichTextContent; // Rich text content
   logo?: Media;
   featured: boolean;
   metaTitle?: string;
@@ -58,7 +70,7 @@ export interface Model extends BaseContent {
   name: string;
   slug: string;
   brand: Brand | string;
-  description?: any; // Rich text content
+  description?: RichTextContent; // Rich text content
   featured: boolean;
   image?: Media;
   metaTitle?: string;
@@ -70,7 +82,7 @@ export interface Modification extends BaseContent {
   name: string;
   slug: string;
   model: Model | string;
-  description?: any; // Rich text content
+  description?: RichTextContent; // Rich text content
   yearStart?: number;
   yearEnd?: number;
   specifications?: Specification[];
@@ -117,7 +129,7 @@ export interface Product extends BaseContent {
   slug: string;
   sku?: string;
   price?: number;
-  description?: any; // Rich text content
+  description?: RichTextContent; // Rich text content
   shortDescription?: string;
   brand?: Brand | string;
   model?: Model | string;

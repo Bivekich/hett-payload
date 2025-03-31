@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import ProductDetail from "../../../../components/ProductDetail";
-import { boilerplateProducts } from "../../../../components/Catalog";
 import { Product } from "../../../../types/product";
 import { useParams } from "next/navigation";
 import { getProduct } from "../../../../services/catalogApi";
@@ -44,8 +43,10 @@ const convertCmsProductToProduct = (cmsProduct: CmsProduct): Product => {
           },
         },
       },
-      // Pass the rich text description directly
-      description: cmsProduct.description || undefined,
+      // Convert rich text description to string or pass undefined
+      description: cmsProduct.description 
+        ? JSON.stringify(cmsProduct.description) 
+        : undefined,
       
       // Map specifications from CMS
       specifications: cmsProduct.specifications?.map(spec => ({

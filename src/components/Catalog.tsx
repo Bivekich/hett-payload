@@ -4,11 +4,11 @@ import React, { useState, useEffect, useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Container from "./Container";
-import ProductCard from "../components/uiKit/ProductCard";
-import Select from "../components/uiKit/Select";
-import Button from "../components/uiKit/Button";
-import Arrow from "../components/uiKit/SliderButton";
-import { getCategories, getSubcategories, getBrands, getModels, getModifications, getProducts, getCatalogProducts } from '../services/catalogApi';
+import ProductCard from "./uiKit/ProductCard";
+import Select from "./uiKit/Select";
+import Button from "./uiKit/Button";
+import Arrow from "./uiKit/SliderButton";
+import { getCategories, getSubcategories, getBrands, getModels, getModifications, getCatalogProducts } from '../services/catalogApi';
 import { Product as CmsProduct, Category, Subcategory as CmsSubcategory, Brand as CmsBrand, Model as CmsModel, Modification, CatalogFilters } from '../types/catalog';
 import { API_URL } from '@/services/api';
 
@@ -47,7 +47,7 @@ export const convertCmsProductToProduct = (cmsProduct: CmsProduct) => {
       imageUrl = cmsProduct.images[0].image.url;
     } else if (typeof cmsProduct.images[0] === 'object' && 'url' in cmsProduct.images[0]) {
       // Direct object with url property (from API with depth=1)
-      imageUrl = (cmsProduct.images[0] as any).url;
+      imageUrl = (cmsProduct.images[0] as { url: string }).url;
     }
     
     // Make URL absolute if it's relative
@@ -76,8 +76,12 @@ export const convertCmsProductToProduct = (cmsProduct: CmsProduct) => {
           },
         },
       },
-      // Pass rich text description directly
-      description: cmsProduct.description || undefined,
+      // Convert rich text to string if needed
+      description: cmsProduct.description 
+        ? typeof cmsProduct.description === 'string' 
+          ? cmsProduct.description 
+          : JSON.stringify(cmsProduct.description)
+        : undefined,
       
       // Map specifications from CMS
       specifications: cmsProduct.specifications?.map(spec => ({
@@ -211,7 +215,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   }, []);
 
   // New helper function to update filter options based on fetched products
-  const updateFilterOptions = useCallback((products: any[]) => {
+  const updateFilterOptions = useCallback((products: CmsProduct[]) => {
     if (!products.length) return;
     
     // Save the current category filter
@@ -935,7 +939,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     // If selecting "All categories" when a path-based category is active,
     // navigate to the main catalog page with filters as query params
     if (isSelectingAllCategories && isPathBasedCategory) {
-      let queryParams = new URLSearchParams();
+      const queryParams = new URLSearchParams();
       
       if (formBrand) queryParams.set('brand', formBrand);
       if (formModel) queryParams.set('model', formModel);
