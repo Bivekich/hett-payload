@@ -385,21 +385,6 @@ export default function Footer() {
                     <span className="text-white">{footerData.address}</span>
                   </div>
                 </div>
-                {/* Social Media Links */}
-                <div className="flex flex-wrap gap-4 mt-4">
-                  {footerData.socialLinks?.map((link, index) => (
-                    <a
-                      key={index}
-                      href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:scale-110 transition-all"
-                      title={link.title || link.platform}
-                    >
-                      {renderSocialIcon(link.platform, link.icon)}
-                    </a>
-                  ))}
-                </div>
               </div>
             </div>
           </div>
