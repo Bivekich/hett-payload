@@ -6,8 +6,8 @@ import CategoryCard from "./CategoryCard";
 import Button from "./uiKit/Button";
 import Select from "./uiKit/Select";
 import VinRequestModal from "./uiKit/VinRequestModal";
-import { getCategories, getBrands, getModels, getModifications } from '../services/catalogApi';
-import { Category, Brand, Model, Modification } from '../types/catalog';
+import { getCategories, getBrands, getModels, getModifications, getSubcategories, getThirdSubcategories } from '../services/catalogApi';
+import { Category, Brand, Model, Modification, Subcategory, ThirdSubcategory } from '../types/catalog';
 import { API_URL } from '@/services/api';
 
 // Interface for category cards display
@@ -25,10 +25,14 @@ const ProductSearchSection = () => {
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [selectedModification, setSelectedModification] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
+  const [selectedThirdSubcategory, setSelectedThirdSubcategory] = useState<string>("");
   const [isVinModalOpen, setIsVinModalOpen] = useState(false);
   
   // State variables for filter options
   const [categoryOptions, setCategoryOptions] = useState<{value: string, label: string}[]>([]);
+  const [subcategoryOptions, setSubcategoryOptions] = useState<{value: string, label: string}[]>([]);
+  const [thirdSubcategoryOptions, setThirdSubcategoryOptions] = useState<{value: string, label: string}[]>([]);
   const [brandOptions, setBrandOptions] = useState<{value: string, label: string}[]>([]);
   const [modelOptions, setModelOptions] = useState<{value: string, label: string}[]>([]);
   const [modificationOptions, setModificationOptions] = useState<{value: string, label: string}[]>([]);
@@ -127,6 +131,28 @@ const ProductSearchSection = () => {
           }))
         ];
         setModificationOptions(formattedModifications);
+        
+        // Fetch subcategories
+        const subcategoriesResponse = await getSubcategories();
+        const formattedSubcategories = [
+          { value: "", label: "Все подкатегории" },
+          ...subcategoriesResponse.docs.map((subcategory: Subcategory) => ({
+            value: subcategory.slug,
+            label: subcategory.name
+          }))
+        ];
+        setSubcategoryOptions(formattedSubcategories);
+        
+        // Fetch third subcategories
+        const thirdSubcategoriesResponse = await getThirdSubcategories();
+        const formattedThirdSubcategories = [
+          { value: "", label: "Все третьи подкатегории" },
+          ...thirdSubcategoriesResponse.docs.map((thirdSubcategory: ThirdSubcategory) => ({
+            value: thirdSubcategory.slug,
+            label: thirdSubcategory.name
+          }))
+        ];
+        setThirdSubcategoryOptions(formattedThirdSubcategories);
         
         setIsLoading(false);
       } catch (err) {
@@ -248,6 +274,116 @@ const ProductSearchSection = () => {
     }
   }, [selectedModel, isLoading, selectedModification]);
 
+  // Fetch subcategories filtered by selected category
+  useEffect(() => {
+    const fetchSubcategoriesByCategory = async () => {
+      if (!selectedCategory) {
+        try {
+          // If no category selected, load all subcategories
+          const subcategoriesResponse = await getSubcategories();
+          const formattedSubcategories = [
+            { value: "", label: "Все подкатегории" },
+            ...subcategoriesResponse.docs.map((subcategory: Subcategory) => ({
+              value: subcategory.slug,
+              label: subcategory.name
+            }))
+          ];
+          setSubcategoryOptions(formattedSubcategories);
+          
+          // Reset selected subcategory when category changes
+          setSelectedSubcategory('');
+        } catch (err) {
+          console.error('Error fetching all subcategories:', err);
+        }
+        return;
+      }
+      
+      try {
+        // Fetch subcategories for the selected category
+        const subcategoriesResponse = await getSubcategories({
+          category: selectedCategory
+        });
+        
+        const formattedSubcategories = [
+          { value: "", label: "Все подкатегории" },
+          ...subcategoriesResponse.docs.map((subcategory: Subcategory) => ({
+            value: subcategory.slug,
+            label: subcategory.name
+          }))
+        ];
+        
+        setSubcategoryOptions(formattedSubcategories);
+        
+        // Reset selected subcategory if it's not in the filtered options
+        if (selectedSubcategory && !formattedSubcategories.some(option => option.value === selectedSubcategory)) {
+          setSelectedSubcategory('');
+        }
+      } catch (err) {
+        console.error('Error fetching subcategories by category:', err);
+      }
+    };
+    
+    // Only run if initial loading is done
+    if (!isLoading) {
+      fetchSubcategoriesByCategory();
+    }
+  }, [selectedCategory, isLoading, selectedSubcategory]);
+  
+  // Fetch third subcategories filtered by selected subcategory
+  useEffect(() => {
+    const fetchThirdSubcategoriesBySubcategory = async () => {
+      if (!selectedSubcategory) {
+        try {
+          // If no subcategory selected, load all third subcategories
+          const thirdSubcategoriesResponse = await getThirdSubcategories();
+          const formattedThirdSubcategories = [
+            { value: "", label: "Все третьи подкатегории" },
+            ...thirdSubcategoriesResponse.docs.map((thirdSubcategory: ThirdSubcategory) => ({
+              value: thirdSubcategory.slug,
+              label: thirdSubcategory.name
+            }))
+          ];
+          setThirdSubcategoryOptions(formattedThirdSubcategories);
+          
+          // Reset selected third subcategory when subcategory changes
+          setSelectedThirdSubcategory('');
+        } catch (err) {
+          console.error('Error fetching all third subcategories:', err);
+        }
+        return;
+      }
+      
+      try {
+        // Fetch third subcategories for the selected subcategory
+        const thirdSubcategoriesResponse = await getThirdSubcategories({
+          subcategory: selectedSubcategory
+        });
+        
+        const formattedThirdSubcategories = [
+          { value: "", label: "Все третьи подкатегории" },
+          ...thirdSubcategoriesResponse.docs.map((thirdSubcategory: ThirdSubcategory) => ({
+            value: thirdSubcategory.slug,
+            label: thirdSubcategory.name
+          }))
+        ];
+        
+        setThirdSubcategoryOptions(formattedThirdSubcategories);
+        
+        // Reset selected third subcategory if it's not in the filtered options
+        if (selectedThirdSubcategory && !formattedThirdSubcategories.some(option => option.value === selectedThirdSubcategory)) {
+          setSelectedThirdSubcategory('');
+        }
+      } catch (err) {
+        console.error('Error fetching third subcategories by subcategory:', err);
+      }
+    };
+    
+    // Only run if initial loading is done
+    if (!isLoading) {
+      fetchThirdSubcategoriesBySubcategory();
+    }
+  }, [selectedSubcategory, isLoading, selectedThirdSubcategory]);
+
   // Handlers for filter changes
   const handleBrandChange = (value: string) => {
     setSelectedBrand(value);
@@ -260,38 +396,63 @@ const ProductSearchSection = () => {
     setSelectedModification(""); // Reset modification when model changes
   };
 
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value);
+    setSelectedSubcategory(''); // Reset subcategory when category changes
+    setSelectedThirdSubcategory(''); // Reset third subcategory when category changes
+  };
+  
+  const handleSubcategoryChange = (value: string) => {
+    setSelectedSubcategory(value);
+    setSelectedThirdSubcategory(''); // Reset third subcategory when subcategory changes
+  };
+  
+  const handleThirdSubcategoryChange = (value: string) => {
+    setSelectedThirdSubcategory(value);
+  };
+
   // Function to handle search and redirect to catalog page with filters
   const handleSearch = () => {
-    // Build query parameters
-    const params = new URLSearchParams();
+    // Build search params
+    const searchParams = new URLSearchParams();
     
-    // Add search query if present
     if (searchQuery) {
-      params.append('search', searchQuery);
+      searchParams.set('search', searchQuery);
     }
     
-    // Add selected filters if present
     if (selectedBrand) {
-      params.append('brand', selectedBrand);
+      searchParams.set('brand', selectedBrand);
     }
     
     if (selectedModel) {
-      params.append('model', selectedModel);
+      searchParams.set('model', selectedModel);
     }
     
     if (selectedModification) {
-      params.append('modification', selectedModification);
+      searchParams.set('modification', selectedModification);
     }
     
-    if (selectedCategory) {
-      params.append('category', selectedCategory);
+    // Use category and subcategory for navigation path or query parameter
+    if (selectedCategory && !selectedSubcategory && !selectedThirdSubcategory) {
+      // If only category is selected, navigate to the category page
+      router.push(`/catalog/${selectedCategory}`);
+    } else {
+      // Otherwise use as query parameters
+      if (selectedCategory) {
+        searchParams.set('category', selectedCategory);
+      }
+      
+      if (selectedSubcategory) {
+        searchParams.set('subcategory', selectedSubcategory);
+      }
+      
+      if (selectedThirdSubcategory) {
+        searchParams.set('thirdsubcategory', selectedThirdSubcategory);
+      }
+      
+      const queryString = searchParams.toString() ? `?${searchParams.toString()}` : '';
+      router.push(`/catalog${queryString}`);
     }
-    
-    // Log search parameters for debugging
-    console.log('Redirecting to catalog with parameters:', Object.fromEntries(params.entries()));
-    
-    // Navigate to catalog page with query parameters
-    router.push(`/catalog?${params.toString()}`);
   };
 
   // Handle category card click
@@ -358,10 +519,30 @@ const ProductSearchSection = () => {
                   <>
                     <Select
                       value={selectedCategory}
-                      onChange={(value) => setSelectedCategory(value)}
+                      onChange={handleCategoryChange}
                       placeholder="Категория"
                       options={categoryOptions}
                     />
+
+                    {/* 
+                    <Select
+                      value={selectedSubcategory}
+                      onChange={handleSubcategoryChange}
+                      placeholder="Подкатегория"
+                      options={subcategoryOptions}
+                      disabled={!selectedCategory}
+                    />
+                    */}
+
+                    {/* 
+                    <Select
+                      value={selectedThirdSubcategory}
+                      onChange={handleThirdSubcategoryChange}
+                      placeholder="Третья подкатегория"
+                      options={thirdSubcategoryOptions}
+                      disabled={!selectedSubcategory}
+                    />
+                    */}
 
                     <Select
                       value={selectedBrand}

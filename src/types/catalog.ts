@@ -54,6 +54,19 @@ export interface Subcategory extends BaseContent {
   metaDescription?: string;
 }
 
+// ThirdSubcategory types
+export interface ThirdSubcategory extends BaseContent {
+  name: string;
+  slug: string;
+  description?: RichTextContent; // Rich text content
+  subcategory: Subcategory | string;
+  image?: Media;
+  icon?: Media;
+  featured: boolean;
+  metaTitle?: string;
+  metaDescription?: string;
+}
+
 // Brand types
 export interface Brand extends BaseContent {
   name: string;
@@ -136,6 +149,7 @@ export interface Product extends BaseContent {
   modification?: Modification | string;
   category: Category | string;
   subcategory?: Subcategory | string;
+  thirdsubcategory?: ThirdSubcategory | string;
   images: ProductImage[];
   featured: boolean;
   inStock: boolean;
@@ -191,6 +205,7 @@ export interface ProductResponse {
 export interface CatalogFilters {
   category?: string;
   subcategory?: string;
+  thirdsubcategory?: string;
   brand?: string;
   model?: string;
   modification?: string;

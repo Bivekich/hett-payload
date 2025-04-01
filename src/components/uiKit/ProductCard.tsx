@@ -95,8 +95,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             src={imageUrl}
             alt={name}
             className="object-contain"
-            width={180}
-            height={180}
+            width={250}
+            height={200}
             style={{ objectFit: 'contain' }}
             unoptimized={!imageUrl.startsWith('/')}
           />
@@ -104,9 +104,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <Image
             src={noItemImage}
             alt="No image available"
-            width={180}
-            height={180}
-            className="object-contain"
+            width={250}
+            height={200}
+            className="object-contain pt-10 pb-4"
             priority
           />
         )}

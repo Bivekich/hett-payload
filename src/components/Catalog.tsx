@@ -8,8 +8,8 @@ import ProductCard from "./uiKit/ProductCard";
 import Select from "./uiKit/Select";
 import Button from "./uiKit/Button";
 import Arrow from "./uiKit/SliderButton";
-import { getCategories, getSubcategories, getBrands, getModels, getModifications, getCatalogProducts } from '../services/catalogApi';
-import { Product as CmsProduct, Category, Subcategory as CmsSubcategory, Brand as CmsBrand, Model as CmsModel, Modification, CatalogFilters } from '../types/catalog';
+import { getCategories, getSubcategories, getThirdSubcategories, getBrands, getModels, getModifications, getCatalogProducts } from '../services/catalogApi';
+import { Product as CmsProduct, Category, Subcategory as CmsSubcategory, ThirdSubcategory as CmsThirdSubcategory, Brand as CmsBrand, Model as CmsModel, Modification, CatalogFilters } from '../types/catalog';
 import { API_URL } from '@/services/api';
 
 // Interfaces for the catalog data
@@ -22,6 +22,18 @@ interface Subcategory {
   id: number;
   attributes: SubcategoryAttributes;
   category?: Category | string;
+}
+
+// ThirdSubcategory interfaces and converter functions
+interface ThirdSubcategoryAttributes {
+  name: string;
+  slug?: string;
+}
+
+interface ThirdSubcategory {
+  id: number;
+  attributes: ThirdSubcategoryAttributes;
+  subcategory?: Subcategory | string;
 }
 
 // Keep empty array for backwards compatibility (used by other components)
@@ -122,6 +134,18 @@ const convertCmsSubcategoryToSubcategory = (cmsSubcategory: CmsSubcategory): Sub
   };
 };
 
+// Helper function to convert CMS third subcategory to frontend format
+const convertCmsThirdSubcategoryToThirdSubcategory = (cmsThirdSubcategory: CmsThirdSubcategory): ThirdSubcategory => {
+  return {
+    id: parseInt(cmsThirdSubcategory.id),
+    attributes: {
+      name: cmsThirdSubcategory.name,
+      slug: cmsThirdSubcategory.slug,
+    },
+    subcategory: cmsThirdSubcategory.subcategory,
+  };
+};
+
 interface CatalogProps {
   initialCategory?: string;
 }
@@ -135,6 +159,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   // State for metadata
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [thirdSubcategories, setThirdSubcategories] = useState<ThirdSubcategory[]>([]);
   const [brands, setBrands] = useState<CmsBrand[]>([]);
   const [models, setModels] = useState<CmsModel[]>([]);
   const [modifications, setModifications] = useState<Modification[]>([]);
@@ -159,6 +184,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   // Filter states - single source of truth for what's displayed in the UI
   const [filterCategory, setFilterCategory] = useState<string | null>(initialCategory || null);
   const [filterSubcategory, setFilterSubcategory] = useState<Subcategory | null>(null);
+  const [filterThirdSubcategory, setFilterThirdSubcategory] = useState<ThirdSubcategory | null>(null);
   const [filterBrand, setFilterBrand] = useState<string | null>(null);
   const [filterModel, setFilterModel] = useState<string | null>(null);
   const [filterModification, setFilterModification] = useState<string | null>(null);
@@ -167,6 +193,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   // Form values - what's displayed in the form inputs
   const [formCategory, setFormCategory] = useState<string | null>(initialCategory || null);
   const [formSubcategory, setFormSubcategory] = useState<Subcategory | null>(null);
+  const [formThirdSubcategory, setFormThirdSubcategory] = useState<ThirdSubcategory | null>(null);
   const [formBrand, setFormBrand] = useState<string | null>(null);
   const [formModel, setFormModel] = useState<string | null>(null);
   const [formModification, setFormModification] = useState<string | null>(null);
@@ -180,13 +207,15 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
         // Fetch all metadata in parallel for better performance
         const [
           categoriesResponse, 
-          subcategoriesResponse, 
+          subcategoriesResponse,
+          thirdSubcategoriesResponse,
           brandsResponse, 
           modelsResponse, 
           modificationsResponse
         ] = await Promise.all([
           getCategories(),
           getSubcategories(),
+          getThirdSubcategories(),
           getBrands(),
           getModels(),
           getModifications()
@@ -195,6 +224,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
         // Process the results
         setCategories(categoriesResponse.docs);
         setSubcategories(subcategoriesResponse.docs.map(convertCmsSubcategoryToSubcategory));
+        setThirdSubcategories(thirdSubcategoriesResponse.docs.map(convertCmsThirdSubcategoryToThirdSubcategory));
         setBrands(brandsResponse.docs);
         setFilteredBrands(brandsResponse.docs); // Initially all brands are available
         setModels(modelsResponse.docs);
@@ -224,6 +254,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     // For each product, collect the unique values of related entities
     const categorySet = new Set<number>();
     const subcategorySet = new Set<number>();
+    const thirdSubcategorySet = new Set<number>();
     const brandSet = new Set<number>();
     const modelSet = new Set<number>();
     const modificationSet = new Set<number>();
@@ -233,6 +264,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
       // Safely get IDs handling both object and ID formats
       const categoryId = typeof product.category === 'object' ? product.category?.id : product.category;
       const subcategoryId = typeof product.subcategory === 'object' ? product.subcategory?.id : product.subcategory;
+      const thirdSubcategoryId = typeof product.thirdsubcategory === 'object' ? product.thirdsubcategory?.id : product.thirdsubcategory;
       const brandId = typeof product.brand === 'object' ? product.brand?.id : product.brand;
       const modelId = typeof product.model === 'object' ? product.model?.id : product.model;
       const modificationId = typeof product.modification === 'object' ? product.modification?.id : product.modification;
@@ -240,6 +272,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
       // Add IDs to sets if they exist
       if (categoryId) categorySet.add(Number(categoryId));
       if (subcategoryId) subcategorySet.add(Number(subcategoryId));
+      if (thirdSubcategoryId) thirdSubcategorySet.add(Number(thirdSubcategoryId));
       if (brandId) brandSet.add(Number(brandId));
       if (modelId) modelSet.add(Number(modelId));
       if (modificationId) modificationSet.add(Number(modificationId));
@@ -248,6 +281,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     console.log("Related entity IDs from products:", {
       categories: Array.from(categorySet),
       subcategories: Array.from(subcategorySet),
+      thirdSubcategories: Array.from(thirdSubcategorySet),
       brands: Array.from(brandSet),
       models: Array.from(modelSet),
       modifications: Array.from(modificationSet)
@@ -280,6 +314,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
       console.log("Fetching products with filters:", {
         category: filterCategory,
         subcategory: filterSubcategory,
+        thirdSubcategory: filterThirdSubcategory,
         brand: filterBrand,
         model: filterModel,
         modification: filterModification,
@@ -301,6 +336,11 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
       if (filterSubcategory) {
         // Use slug for filtering
         filters.subcategory = filterSubcategory.attributes.slug || '';
+      }
+      
+      if (filterThirdSubcategory) {
+        // Use slug for filtering
+        filters.thirdsubcategory = filterThirdSubcategory.attributes.slug || '';
       }
       
       if (filterBrand) {
@@ -351,6 +391,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   }, [
     filterCategory,
     filterSubcategory,
+    filterThirdSubcategory,
     filterBrand,
     filterModel,
     filterModification,
@@ -750,6 +791,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     // Start with defaults
     let newCategory = initialCategory || null;
     let newSubcategory: Subcategory | null = null;
+    let newThirdSubcategory: ThirdSubcategory | null = null;
     let newBrand: string | null = null;
     let newModel: string | null = null;
     let newModification: string | null = null;
@@ -759,13 +801,14 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     if (searchParams) {
       const urlCategory = searchParams.get('category');
       const urlSubcategory = searchParams.get('subcategory') || searchParams.get('subcat');
+      const urlThirdSubcategory = searchParams.get('thirdsubcategory') || searchParams.get('thirdsubcat');
       const urlBrand = searchParams.get('brand');
       const urlModel = searchParams.get('model');
       const urlModification = searchParams.get('modification') || searchParams.get('mod');
       const searchQuery = searchParams.get('search');
       
       // If any search parameter is present, mark search as active
-      if (urlCategory || urlSubcategory || urlBrand || urlModel || urlModification || searchQuery) {
+      if (urlCategory || urlSubcategory || urlThirdSubcategory || urlBrand || urlModel || urlModification || searchQuery) {
         searchActive = true;
         
         // Apply search parameters if present
@@ -780,9 +823,16 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
           if (matchedSubcategory) newSubcategory = matchedSubcategory;
         }
         
+        // Find third subcategory by slug if specified
+        if (urlThirdSubcategory) {
+          const matchedThirdSubcategory = thirdSubcategories.find(sub => sub.attributes.slug === urlThirdSubcategory);
+          if (matchedThirdSubcategory) newThirdSubcategory = matchedThirdSubcategory;
+        }
+        
         console.log("Search params found:", { 
           category: urlCategory, 
           subcategory: urlSubcategory,
+          thirdSubcategory: urlThirdSubcategory,
           brand: urlBrand,
           model: urlModel,
           modification: urlModification,
@@ -809,6 +859,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     // Apply the determined filters (both to filters and form)
     setFilterCategory(newCategory);
     setFilterSubcategory(newSubcategory);
+    setFilterThirdSubcategory(newThirdSubcategory);
     setFilterBrand(newBrand);
     setFilterModel(newModel);
     setFilterModification(newModification);
@@ -817,6 +868,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     // Also update form state to match
     setFormCategory(newCategory);
     setFormSubcategory(newSubcategory);
+    setFormThirdSubcategory(newThirdSubcategory);
     setFormBrand(newBrand);
     setFormModel(newModel);
     setFormModification(newModification);
@@ -824,7 +876,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     // Reset pagination when filters change
     setCurrentPage(1);
     
-  }, [metadataLoaded, searchParams, pathname, initialCategory, categories, subcategories]);
+  }, [metadataLoaded, searchParams, pathname, initialCategory, categories, subcategories, thirdSubcategories]);
 
   // Use a separate useEffect to fetch products when filters change
   useEffect(() => {
@@ -837,6 +889,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     metadataLoaded, 
     filterCategory, 
     filterSubcategory, 
+    filterThirdSubcategory, 
     filterBrand, 
     filterModel, 
     filterModification, 
@@ -872,6 +925,24 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
       }))
   ];
 
+  const thirdSubcategoryOptions = [
+    { value: "", label: "Все третьи подкатегории" },
+    ...thirdSubcategories
+    .filter(third => {
+      if (!formSubcategory) return true;
+      
+      // Check if third subcategory belongs to selected subcategory
+      if (typeof third.subcategory === 'object' && third.subcategory) {
+        return third.subcategory.id === formSubcategory.id;
+      }
+      return false;
+    })
+    .map((third) => ({
+      value: third.id.toString(),
+      label: third.attributes.name,
+    }))
+  ];
+
   const brandOptions = [
     { value: "", label: "Все марки" },
     ...filteredBrands.map((brand) => ({
@@ -901,6 +972,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     setFormCategory(value || null);
     // Reset downstream filters
     setFormSubcategory(null);
+    setFormThirdSubcategory(null);
     setFormBrand(null);
     setFormModel(null);
     setFormModification(null);
@@ -913,8 +985,17 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     } else {
       setFormSubcategory(null);
     }
-    // Don't reset brand, model, etc. when changing subcategory
-    // as subcategories share the same universe as their parent category
+    // Reset third subcategory when subcategory changes
+    setFormThirdSubcategory(null);
+  };
+  
+  const handleThirdSubcategoryChange = (value: string) => {
+    if (value) {
+      const third = thirdSubcategories.find((t) => t.id.toString() === value);
+      setFormThirdSubcategory(third || null);
+    } else {
+      setFormThirdSubcategory(null);
+    }
   };
   
   const handleBrandChange = (value: string) => {
@@ -950,9 +1031,10 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
       return;
     }
     
-    // Apply form values to filters
+    // Update active filters from form
     setFilterCategory(formCategory);
     setFilterSubcategory(formSubcategory);
+    setFilterThirdSubcategory(formThirdSubcategory);
     setFilterBrand(formBrand);
     setFilterModel(formModel);
     setFilterModification(formModification);
@@ -966,6 +1048,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     console.log("Search applied:", {
       category: formCategory,
       subcategory: formSubcategory?.attributes.slug,
+      thirdSubcategory: formThirdSubcategory?.attributes.slug,
       brand: formBrand,
       model: formModel,
       modification: formModification
@@ -1034,9 +1117,11 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
 
           {/* Page title */}
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 md:mb-8 text-[#3B3B3B] font-[Roboto_Condensed]">
-            {filterSubcategory
-              ? filterSubcategory.attributes.name
-              : selectedCategoryName}
+            {filterThirdSubcategory
+              ? filterThirdSubcategory.attributes.name
+              : filterSubcategory
+                ? filterSubcategory.attributes.name
+                : selectedCategoryName}
             {searchParams?.get('search') && 
               <span className="font-normal text-lg ml-2">
               
@@ -1073,6 +1158,8 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
                 placeholder="Категория"
                 className="w-full md:flex-2"
               />
+              
+              {/*
               <Select
                 options={subcategoryOptions}
                 value={formSubcategory ? formSubcategory.id.toString() : ""}
@@ -1080,6 +1167,17 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
                 placeholder="Подкатегория"
                 className="w-full md:flex-2"
               />
+              */}
+
+              {/*
+              <Select
+                options={thirdSubcategoryOptions}
+                value={formThirdSubcategory ? formThirdSubcategory.id.toString() : ""}
+                onChange={handleThirdSubcategoryChange}
+                placeholder="Третья подкатегория"
+                className="w-full md:flex-2"
+              />
+              */}
 
               <Select
                 options={brandOptions}

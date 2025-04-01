@@ -43,15 +43,15 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   return (
     <div className="flex flex-col justify-start min-w-[240px] w-[590px] max-md:max-w-full">
       {/* Main Product Image - Fixed height container */}
-      <div className="flex items-center justify-center bg-white h-[400px] border border-gray-100 relative">
+      <div className="flex items-center justify-center bg-white h-[400px]  relative">
         {hasRealImage ? (
           // Use Image component with unoptimized for external URLs
           <Image
             src={formattedMainImageUrl}
             alt="Product"
-            className="max-h-full max-w-full object-contain p-4"
-            width={400}
-            height={400}
+            className="max-h-full max-w-full object-contain border border-gray-100"
+            width={590}
+            height={590}
             style={{ objectFit: 'contain' }}
             unoptimized={!formattedMainImageUrl.startsWith('/')}
           />
@@ -59,9 +59,9 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
           <Image
             src={noItemImage}
             alt="No image available"
-            width={300}
-            height={300}
-            className="object-contain"
+            width={590}
+            height={590}
+            className="object-contain border border-gray-100"
             priority
           />
         )}

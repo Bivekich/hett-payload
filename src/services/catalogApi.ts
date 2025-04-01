@@ -8,6 +8,7 @@ import {
   PaginatedResponse,
   Product,
   Subcategory,
+  ThirdSubcategory,
 } from '../types/catalog';
 
 // Helper function to build the query parameters
@@ -43,6 +44,9 @@ const buildQueryParams = (filters: CatalogFilters = {}): URLSearchParams => {
   }
   if (filters.subcategory) {
     queryParams.append('where[subcategory][slug][equals]', filters.subcategory);
+  }
+  if (filters.thirdsubcategory) {
+    queryParams.append('where[thirdsubcategory][slug][equals]', filters.thirdsubcategory);
   }
   if (filters.brand) {
     queryParams.append('where[brand][slug][equals]', filters.brand);
@@ -159,6 +163,53 @@ export const getSubcategoriesByCategory = async (
     return await response.json();
   } catch (error) {
     console.error('Error fetching subcategories by category:', error);
+    throw error;
+  }
+};
+
+// ThirdSubcategories API methods
+export const getThirdSubcategories = async (
+  filters: CatalogFilters = {}
+): Promise<PaginatedResponse<ThirdSubcategory>> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+    const response = await fetch(`${API_URL}/api/thirdsubcategories?${queryParams.toString()}`, {
+      headers: {
+        ...(API_TOKEN ? { Authorization: `Bearer ${API_TOKEN}` } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch third subcategories: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching third subcategories:', error);
+    throw error;
+  }
+};
+
+export const getThirdSubcategoriesBySubcategory = async (
+  subcategorySlug: string
+): Promise<PaginatedResponse<ThirdSubcategory>> => {
+  try {
+    const response = await fetch(
+      `${API_URL}/api/thirdsubcategories?where[subcategory.slug][equals]=${subcategorySlug}&depth=2`,
+      {
+        headers: {
+          ...(API_TOKEN ? { Authorization: `Bearer ${API_TOKEN}` } : {}),
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch third subcategories: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching third subcategories by subcategory:', error);
     throw error;
   }
 };
