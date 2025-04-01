@@ -8,6 +8,8 @@ services:
     ports:
       - '3000:3000'
     restart: always
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
     # При необходимости можно добавить тома для хранения данных

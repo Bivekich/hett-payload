@@ -14,11 +14,6 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Создание .env.production
-RUN touch .env.production
-RUN echo "NEXT_PUBLIC_PAYLOAD_API_URL=https://cms.hettautomotive.ru" >> .env.production
-RUN echo "NEXT_PUBLIC_APP_URL=https://hettautomotive.ru" >> .env.production
-
 # Сборка проекта
 RUN npm run build
 
