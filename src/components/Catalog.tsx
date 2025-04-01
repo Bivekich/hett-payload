@@ -136,13 +136,27 @@ const convertCmsSubcategoryToSubcategory = (cmsSubcategory: CmsSubcategory): Sub
 
 // Helper function to convert CMS third subcategory to frontend format
 const convertCmsThirdSubcategoryToThirdSubcategory = (cmsThirdSubcategory: CmsThirdSubcategory): ThirdSubcategory => {
+  // Determine the subcategory value to assign
+  let subcategoryValue: string | Subcategory;
+  
+  if (typeof cmsThirdSubcategory.subcategory === 'string') {
+    // If it's already a string, use it directly
+    subcategoryValue = cmsThirdSubcategory.subcategory;
+  } else if (cmsThirdSubcategory.subcategory) {
+    // If it's an object, convert it to the expected Subcategory format
+    subcategoryValue = convertCmsSubcategoryToSubcategory(cmsThirdSubcategory.subcategory);
+  } else {
+    // Default to empty string if no subcategory is available
+    subcategoryValue = '';
+  }
+  
   return {
     id: parseInt(cmsThirdSubcategory.id),
     attributes: {
       name: cmsThirdSubcategory.name,
       slug: cmsThirdSubcategory.slug,
     },
-    subcategory: cmsThirdSubcategory.subcategory,
+    subcategory: subcategoryValue,
   };
 };
 
@@ -907,6 +921,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     }))
   ];
   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const subcategoryOptions = [
     { value: "", label: "Все подкатегории" },
     ...subcategories
@@ -925,6 +940,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
       }))
   ];
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const thirdSubcategoryOptions = [
     { value: "", label: "Все третьи подкатегории" },
     ...thirdSubcategories
@@ -978,6 +994,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     setFormModification(null);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSubcategoryChange = (value: string) => {
     if (value) {
       const sub = subcategories.find((s) => s.id.toString() === value);
@@ -989,6 +1006,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     setFormThirdSubcategory(null);
   };
   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleThirdSubcategoryChange = (value: string) => {
     if (value) {
       const third = thirdSubcategories.find((t) => t.id.toString() === value);

@@ -31,7 +31,9 @@ const ProductSearchSection = () => {
   
   // State variables for filter options
   const [categoryOptions, setCategoryOptions] = useState<{value: string, label: string}[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [subcategoryOptions, setSubcategoryOptions] = useState<{value: string, label: string}[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [thirdSubcategoryOptions, setThirdSubcategoryOptions] = useState<{value: string, label: string}[]>([]);
   const [brandOptions, setBrandOptions] = useState<{value: string, label: string}[]>([]);
   const [modelOptions, setModelOptions] = useState<{value: string, label: string}[]>([]);
@@ -402,11 +404,13 @@ const ProductSearchSection = () => {
     setSelectedThirdSubcategory(''); // Reset third subcategory when category changes
   };
   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSubcategoryChange = (value: string) => {
     setSelectedSubcategory(value);
     setSelectedThirdSubcategory(''); // Reset third subcategory when subcategory changes
   };
   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleThirdSubcategoryChange = (value: string) => {
     setSelectedThirdSubcategory(value);
   };
