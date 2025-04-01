@@ -227,7 +227,7 @@ export default function Footer() {
                     href={headerWhatsappLink.url.startsWith("http") ? headerWhatsappLink.url : `https://${headerWhatsappLink.url}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:scale-110 hover:text-[#38AE34] transition-all"
+                    className="hover:scale-110 hover:text-[#38AE34] transition-all mr-1"
                   >
                     {renderSocialIcon("whatsapp", headerWhatsappLink.icon)}
                   </a>
