@@ -1177,7 +1177,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
                 className="w-full md:flex-2"
               />
               
-              {/*
+              
               <Select
                 options={subcategoryOptions}
                 value={formSubcategory ? formSubcategory.id.toString() : ""}
@@ -1185,7 +1185,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
                 placeholder="Подкатегория"
                 className="w-full md:flex-2"
               />
-              */}
+             
 
               {/*
               <Select
