@@ -16,12 +16,13 @@ const DropdownItem: React.FC<DropdownItemProps> = ({
 }) => {
   return (
     <li
-      className={`px-5 py-2 cursor-pointer font-['Roboto_Condensed'] text-base ${
+      className={`px-5 py-2 cursor-pointer font-['Roboto_Condensed'] text-base truncate ${
         isSelected ? "text-[#38AE34]" : "text-[#3B3B3B]"
       }`}
       onClick={onClick}
       role="option"
       aria-selected={isSelected}
+      title={item}
     >
       {item}
     </li>
@@ -88,18 +89,17 @@ const Select = ({
           disabled={disabled}
         >
           <span
-            className={`font-['Roboto_Condensed'] text-base ${
+            className={`font-['Roboto_Condensed'] text-base truncate ${
               value ? "text-[#3B3B3B]" : "text-[#8898A4]"
             }`}
+            title={selectedLabel}
           >
             {selectedLabel}
           </span>
           <svg
-            className={`w-4 h-4 transition-transform text-[#8898A4] ${
+            className={`w-[12px] h-[8px] transition-transform text-[#8898A4] ml-2 flex-shrink-0 ${
               isOpen ? "rotate-180" : ""
             }`}
-            width="12"
-            height="8"
             viewBox="0 0 12 8"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"

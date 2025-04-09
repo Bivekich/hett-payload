@@ -15,6 +15,8 @@ interface GeographySlide {
   title?: string;
   description?: string;
   map?: MapImage;
+  buttonText?: string;
+  buttonLink?: string;
 }
 
 interface GeographyDataType {
@@ -53,17 +55,18 @@ const GeographySection = () => {
     : null;
 
   return (
-    <section className="py-16">
-      <div className="max-w-[1280px] mx-auto md:px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+    <section className="py-8 sm:py-16">
+      <div className="max-w-[1280px] mx-auto px-4 md:px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center">
           <div className="order-2 lg:order-1">
-            <div className="relative w-full h-[400px]">
+            <div className="relative w-full h-[300px] sm:h-[400px]">
               {imageUrl ? (
                 <Image
                   src={imageUrl}
                   alt={firstSlide?.map?.alt || "География Hett Automotive"}
                   fill
                   className="object-contain"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                 />
               ) : (
                 <Image
@@ -71,25 +74,28 @@ const GeographySection = () => {
                   alt="География Hett Automotive"
                   fill
                   className="object-contain"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                 />
               )}
             </div>
           </div>
 
           <div className="order-1 lg:order-2">
-            <h2 className="text-[30px] font-bold roboto-condensed-bold text-black mb-4">
+            <h2 className="text-[24px] sm:text-[30px] font-bold roboto-condensed-bold text-black mb-4">
               {firstSlide?.title || "География Hett Automotive"}
             </h2>
-            <p className="text-[14px] roboto-condensed-regular text-black mb-8">
+            <p className="text-[14px] roboto-condensed-regular text-black mb-6 sm:mb-8">
               {firstSlide?.description ||
                 "Одним из главных преимуществ Hett Automotive является её надёжность. Клиенты могут быть уверены в том, что они получат качественные автозапчасти, которые прослужат им долгое время."}
             </p>
-            <Button
-              label="География"
-              href="/geography"
-              variant="primary"
-              className="inline-flex"
-            />
+            {firstSlide?.buttonText && firstSlide?.buttonLink && (
+              <Button
+                label={firstSlide.buttonText}
+                href={firstSlide.buttonLink}
+                variant="primary"
+                className="inline-flex w-full sm:w-auto justify-center"
+              />
+            )}
           </div>
         </div>
       </div>

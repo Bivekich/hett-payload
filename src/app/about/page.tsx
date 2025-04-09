@@ -113,7 +113,10 @@ export default function AboutPage() {
         <ProductionSection
           title={aboutData.productionSection.title}
           description={aboutData.productionSection.description}
-          image={aboutData.productionSection.image?.url ? processImageUrl(aboutData.productionSection.image.url) : undefined}
+          images={aboutData.productionSection.images?.map(item => ({
+            url: item.image?.url ? processImageUrl(item.image.url) : '',
+            alt: item.alt || item.image?.alt || 'Production image'
+          })) || []}
         />
       )}
 

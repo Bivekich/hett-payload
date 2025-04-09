@@ -50,7 +50,7 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
             key={index}
             className="bg-white p-5 pb-[30px] flex flex-col gap-5"
           >
-            <div className="w-[60px] h-[60px] bg-[#38AE34] rounded flex items-center justify-center">
+            <div className="w-[60px] h-[60px] bg-[#38AE34] flex items-center justify-center">
               {feature.icon && (
                 <Image
                   src={feature.icon}

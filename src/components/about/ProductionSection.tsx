@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { lexicalToHtml } from "@/utils/lexicalToHtml";
+import { API_URL } from "@/services/api";
 
 // Define a type for lexical content
 interface LexicalContent {
@@ -14,19 +15,22 @@ interface LexicalContent {
   };
 }
 
+interface ProductionImage {
+  url: string;
+  alt?: string;
+}
+
 interface ProductionSectionProps {
   title?: string;
   description?: LexicalContent; // Rich text content
-  image?: string;
+  images?: ProductionImage[];
 }
 
 const ProductionSection: React.FC<ProductionSectionProps> = ({
   title = "Современные технологии и новое производство",
   description,
-  image,
+  images = [],
 }) => {
-  const images = image ? [{ src: image, alt: title }] : [];
-
   // Convert Lexical content to HTML
   const descriptionHtml = description ? lexicalToHtml(description) : "";
 
@@ -44,15 +48,15 @@ const ProductionSection: React.FC<ProductionSectionProps> = ({
             />
           )}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {images.map((image, index) => (
             <div key={index} className="aspect-[4/3] relative">
               <Image
-                src={image.src}
-                alt={image.alt}
+                src={image.url.startsWith('/') ? `${API_URL}${image.url}` : image.url}
+                alt={image.alt || 'Production image'}
                 fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                className="object-cover rounded-sm"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
               />
             </div>
           ))}

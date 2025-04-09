@@ -36,7 +36,7 @@ interface FooterData {
   privacyPolicyLink?: string;
 }
 
-export default function Footer() {
+const Footer = () => {
   const [footerData, setFooterData] = useState<FooterData | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [customPages, setCustomPages] = useState<Array<{
@@ -107,7 +107,7 @@ export default function Footer() {
 
         // Fetch custom pages
         try {
-          const pages = await getCustomPages();
+          const pages = await getCustomPages(1, 10, true); // Add forMenu parameter
           setCustomPages(pages);
         } catch (err) {
           console.error("Error fetching custom pages:", err);
@@ -237,70 +237,61 @@ export default function Footer() {
           </div>
 
           {/* Main Footer Content */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 mt-8 md:mt-10">
-            {/* Products Column */}
-            <div
-              className={`flex flex-col ${
-                categories.length > 4 ? "sm:col-span-2" : "sm:col-span-1"
-              } lg:col-span-1`}
-            >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10 mt-8 md:mt-10">
+            {/* First Categories Column */}
+            <div className="flex flex-col">
               <h3 className="text-[18px] sm:text-[18px] font-bold leading-none text-white roboto-condensed-bold">
-                Продукция
+                Каталог
               </h3>
-              <div
-                className={`flex ${
-                  categories.length > 4 ? "flex-row gap-x-8" : "flex-col"
-                } mt-6 md:mt-8`}
-              >
-                {/* First column (first 4 categories) */}
-                <nav
-                  className="flex flex-col gap-y-3 md:gap-y-4 w-full leading-snug text-gray-400
+              <nav
+                className="flex flex-col gap-y-3 md:gap-y-4 mt-6 md:mt-8 leading-snug text-gray-400
                 2xl:text-base
                 xl:text-base
                 lg:text-sm
                 md:text-sm
                 max-md:text-xs roboto-condensed-regular"
-                >
-                  {categories.slice(0, 4).map((category) => (
-                    <Link
-                      key={category.id}
-                      href={`/catalog/${category.slug}`}
-                      className="hover:text-[#38AE34] transition-colors cursor-pointer"
-                      onClick={handleNavigation}
-                    >
-                      {category.name}
-                    </Link>
-                  ))}
-                </nav>
-                {/* Second column (next 4 categories) */}
-                {categories.length > 4 && (
-                  <nav
-                    className="flex flex-col gap-y-3 md:gap-y-4 w-full mt-3 sm:mt-0 leading-snug text-gray-400
-                  2xl:text-base
-                  xl:text-base
-                  lg:text-sm
-                  md:text-sm
-                  max-md:text-xs roboto-condensed-regular"
+              >
+                {categories.slice(0, Math.ceil(categories.length / 2)).map((category) => (
+                  <Link
+                    key={category.id}
+                    href={`/catalog/${category.slug}`}
+                    className="hover:text-[#38AE34] transition-colors cursor-pointer"
+                    onClick={handleNavigation}
                   >
-                    {categories.slice(4, 8).map((category) => (
-                      <Link
-                        key={category.id}
-                        href={`/catalog/${category.slug}`}
-                        className="hover:text-[#38AE34] transition-colors cursor-pointer"
-                        onClick={handleNavigation}
-                      >
-                        {category.name}
-                      </Link>
-                    ))}
-                  </nav>
-                )}
-              </div>
+                    {category.name}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+
+            {/* Second Categories Column */}
+            <div className="flex flex-col">
+          <div className="md:py-2"/>
+              <nav
+                className="flex flex-col gap-y-3 md:gap-y-4 mt-6 md:mt-8 leading-snug text-gray-400
+                2xl:text-base
+                xl:text-base
+                lg:text-sm
+                md:text-sm
+                max-md:text-xs roboto-condensed-regular"
+              >
+                {categories.slice(Math.ceil(categories.length / 2)).map((category) => (
+                  <Link
+                    key={category.id}
+                    href={`/catalog/${category.slug}`}
+                    className="hover:text-[#38AE34] transition-colors cursor-pointer"
+                    onClick={handleNavigation}
+                  >
+                    {category.name}
+                  </Link>
+                ))}
+              </nav>
             </div>
 
             {/* About Column */}
             <div className="flex flex-col">
               <h3 className="text-[18px] sm:text-[18px] font-bold leading-none text-white roboto-condensed-bold">
-                О компании
+                Актуальная инфомация
               </h3>
               <nav
                 className="flex flex-col gap-y-3 md:gap-y-4 mt-6 md:mt-8 leading-snug text-gray-400
@@ -347,42 +338,36 @@ export default function Footer() {
 
             {/* Contact Info Column */}
             <div className="flex flex-col">
-              <h3 className="text-[18px] sm:text-[18px] font-bold leading-none text-white roboto-condensed-bold">
-                Контакты
-              </h3>
-              <div className="flex flex-col gap-y-3 md:gap-y-4 mt-6 md:mt-8 leading-snug text-white roboto-condensed-regular">
+             
+              <div className="flex flex-col gap-y-3 md:gap-y-4 mt-6 md:mt-8 leading-snug text-gray-400
+                2xl:text-base
+                xl:text-base
+                lg:text-sm
+                md:text-sm
+                max-md:text-xs roboto-condensed-regular">
                 {/* Phone */}
-                <div className="flex gap-2 items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M12.1733 11.38C11.58 11.38 10.9933 11.2467 10.46 10.98C10.1533 10.8267 9.78667 10.8933 9.56 11.1267L8.32 12.68C6.2 11.6267 4.38 9.80667 3.32 7.68667L4.88667 6.45333C5.12 6.22667 5.18 5.86 5.02667 5.55333C4.76 5.02 4.62667 4.43333 4.62667 3.84C4.62667 3.42667 4.28 3.08 3.86667 3.08H1.33333C0.92 3.08 0.666667 3.42667 0.666667 3.84C0.666667 10.0867 5.92 15.34 12.1667 15.34C12.58 15.34 12.9333 15.0867 12.9333 14.6733V12.14C12.9333 11.7267 12.5867 11.38 12.1733 11.38Z" fill="#38AE34"/>
-                  </svg>
-                  <div className="flex flex-col">
-                    <span className="text-xs text-gray-400">{footerData.phoneLabel}</span>
-                    <a href={`tel:${footerData.phone}`} className="hover:text-[#38AE34] transition-colors cursor-pointer">
-                      {footerData.phone}
-                    </a>
-                  </div>
+                <div className="flex flex-col gap-1">
+                  
+                  <a href={`tel:${footerData.phone}`} className="text-gray-400 hover:text-[#38AE34] transition-colors cursor-pointer text-[19px]">
+                    {footerData.phone || "+7 (495) 260 20 60"}
+                  </a>
+                  <span className="text-white">{footerData.phoneLabel || "Оптовый отдел"}</span>
                 </div>
                 {/* Email */}
-                <div className="flex gap-2 items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="12" viewBox="0 0 16 12" fill="none">
-                    <path d="M14.6667 0H1.33333C0.6 0 0 0.6 0 1.33333V10.6667C0 11.4 0.6 12 1.33333 12H14.6667C15.4 12 16 11.4 16 10.6667V1.33333C16 0.6 15.4 0 14.6667 0ZM14.6667 2.66667L8 6.66667L1.33333 2.66667V1.33333L8 5.33333L14.6667 1.33333V2.66667Z" fill="#38AE34"/>
-                  </svg>
-                  <div className="flex flex-col">
-                    <span className="text-xs text-gray-400">{footerData.emailLabel}</span>
-                    <a href={`mailto:${footerData.email}`} className="hover:text-[#38AE34] transition-colors cursor-pointer">
-                      {footerData.email}
-                    </a>
-                  </div>
+                <div className="flex flex-col gap-1">
+             
+                  <a href={`mailto:${footerData.email}`} className="text-gray-400 hover:text-[#38AE34] text-[19px] transition-colors cursor-pointer">
+                    {footerData.email || "info@hett-auto.ru"}
+                  </a>
+                       <span className="text-white">{footerData.emailLabel || "почта"}</span>
                 </div>
                 {/* Address */}
-                <div className="flex gap-2 items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="16" viewBox="0 0 14 16" fill="none">
-                    <path d="M6.99999 0C3.13999 0 0 3.14 0 7C0 12.25 6.99999 16 6.99999 16C6.99999 16 14 12.25 14 7C14 3.14 10.86 0 6.99999 0ZM6.99999 9.5C5.61999 9.5 4.49999 8.38 4.49999 7C4.49999 5.62 5.61999 4.5 6.99999 4.5C8.37999 4.5 9.49999 5.62 9.49999 7C9.49999 8.38 8.37999 9.5 6.99999 9.5Z" fill="#38AE34"/>
-                  </svg>
-                  <div className="flex flex-col">
-                    <span className="text-xs text-gray-400">{footerData.addressLabel}</span>
-                    <span className="text-white">{footerData.address}</span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-2.5 items-start">
+                    <span className="text-gray-400 text-[19px]">{footerData.address || "Москва, ул. Примерная, д. 123"}</span>
+                    <span className="text-[#38AE34] cursor-pointer" tabIndex={0} role="button">
+                      <span className="text-white">Адрес </span>  Показать на карте
+                    </span>
                   </div>
                 </div>
               </div>
@@ -406,3 +391,5 @@ export default function Footer() {
     </div>
   );
 }
+
+export default Footer;

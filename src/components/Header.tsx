@@ -267,7 +267,7 @@ export default function Header() {
   useEffect(() => {
     const fetchCustomPages = async () => {
       try {
-        const pages = await getCustomPages();
+        const pages = await getCustomPages(1, 10, true);
         setCustomPages(pages);
       } catch (err) {
         console.error("Error fetching custom pages:", err);
@@ -354,10 +354,19 @@ export default function Header() {
               {/* Navigation Links */}
               <div className="flex items-center">
                 <div className="flex gap-8">
-                  <DropdownMenu
-                    title="О компании Hett Automotive"
-                    items={aboutMenuItems}
-                  />
+                  {customPages.length > 0 ? (
+                    <DropdownMenu
+                      title="О компании Hett Automotive"
+                      items={aboutMenuItems}
+                    />
+                  ) : (
+                    <Link
+                      href="/about"
+                      className="text-sm font-bold leading-relaxed uppercase text-[#555555] hover:text-[#38AE34] transition-colors roboto-condensed-bold"
+                    >
+                      О компании Hett Automotive
+                    </Link>
+                  )}
                   <div className="flex gap-8 text-sm font-bold leading-relaxed uppercase text-[#555555]">
                     <Link
                       href="/news"
@@ -453,39 +462,48 @@ export default function Header() {
           <div className="flex gap-5 mt-5 w-full">
             {/* Search Bar */}
             <div ref={searchRef} className="flex-1 relative">
-              <div className="flex gap-2.5 items-center h-[42px] px-5 border border-[#8898A4] hover:border-[#38AE34] focus-within:border-[#38AE34] transition-colors group">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-[#555555] group-focus-within:text-[#38AE34] transition-colors w-6 aspect-square cursor-pointer hover:text-[#38AE34]"
+              <div className="flex items-center gap-2">
+                <div className="flex-1 border border-[#8898A4] hover:border-[#38AE34] focus-within:border-[#38AE34] transition-colors group h-[42px]">
+                  <div className="flex gap-2.5 items-center px-5 h-full">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-[#555555] group-focus-within:text-[#38AE34] transition-colors w-6 aspect-square"
+                    >
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <path d="m21 21-4.3-4.3"></path>
+                    </svg>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={handleSearchChange}
+                      onKeyDown={handleSearchKeyDown}
+                      placeholder="Поиск по названию, артикулу или OEM"
+                      className="flex-1 text-sm leading-relaxed outline-none roboto-condensed-regular placeholder:text-[#8898A4]"
+                    />
+                  </div>
+                </div>
+                <Button
+                  label="Найти"
+                  variant="noArrow2"
                   onClick={handleSearchSubmit}
-                >
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <path d="m21 21-4.3-4.3"></path>
-                </svg>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  onKeyDown={handleSearchKeyDown}
-                  placeholder="Поиск по названию, артикулу или OEM"
-                  className="flex-1 text-sm leading-relaxed outline-none roboto-condensed-regular placeholder:text-[#8898A4]"
+                  className="px-6 hover:text-black"
                 />
               </div>
             </div>
 
             {/* VIN Search Button */}
             <Button
-              label="Запрос по VIN"
+              label="Запросить по VIN"
               variant="noArrow"
-              className="min-w-[200px]"
+              className="min-w-[200px] border-none"
               onClick={() => setIsVinModalOpen(true)}
             />
 
@@ -594,30 +612,39 @@ export default function Header() {
 
           {/* Mobile Search */}
           <div ref={searchRef} className="relative w-full mt-4">
-            <div className="flex items-center h-10 px-4 border border-[#8898A4] hover:border-[#38AE34] focus-within:border-[#38AE34] transition-colors group">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-[#555555] mr-2 cursor-pointer hover:text-[#38AE34]"
+            <div className="flex items-center gap-2">
+              <div className="flex-1 border border-[#8898A4] hover:border-[#38AE34] focus-within:border-[#38AE34] transition-colors group h-10">
+                <div className="flex gap-2.5 items-center px-4 h-full">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-[#555555] group-focus-within:text-[#38AE34] transition-colors w-5 aspect-square"
+                  >
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.3-4.3"></path>
+                  </svg>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onKeyDown={handleSearchKeyDown}
+                    placeholder="Поиск по названию, артикулу или OEM"
+                    className="flex-1 text-sm leading-relaxed outline-none roboto-condensed-regular placeholder:text-[#8898A4]"
+                  />
+                </div>
+              </div>
+              <Button
+                label="Найти"
+                variant="noArrow2"
                 onClick={handleSearchSubmit}
-              >
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.3-4.3"></path>
-              </svg>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={handleSearchChange}
-                onKeyDown={handleSearchKeyDown}
-                placeholder="Поиск по названию, артикулу или OEM"
-                className="flex-1 text-sm leading-relaxed outline-none roboto-condensed-regular placeholder:text-[#8898A4]"
+                className="px-4 hover:text-black"
               />
             </div>
           </div>
@@ -625,9 +652,9 @@ export default function Header() {
           {/* VIN Request for Mobile */}
           <div className="mt-3">
             <Button
-              label="Запрос по VIN"
+              label="Запросить по VIN"
               variant="noArrow"
-              className="w-full"
+              className="w-full border-none"
               onClick={() => setIsVinModalOpen(true)}
             />
           </div>

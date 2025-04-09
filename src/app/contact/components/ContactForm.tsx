@@ -5,7 +5,7 @@ import Container from "@/components/Container";
 import Button from "@/components/uiKit/Button";
 import { getContactData } from "@/services/api";
 import { ContactFormData } from "@/services/notifications";
-
+import LoadingSpinner from "@/components/LoadingSpinner";
 interface FormField {
   fieldName: string;
   fieldType: "text" | "email" | "tel" | "textarea";
@@ -148,7 +148,9 @@ const ContactForm = () => {
     return (
       <div className="bg-white py-12">
         <Container>
-          <div className="text-center">Loading contact form...</div>
+          <div className="text-center">
+            <LoadingSpinner />
+          </div>
         </Container>
       </div>
     );

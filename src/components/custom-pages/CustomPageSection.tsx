@@ -52,32 +52,17 @@ const CustomPageSection: React.FC<CustomPageSectionProps> = ({
       color: #1E1E1E;
       margin-bottom: 1rem;
       margin-top: 2rem;
-    }
-    
-    .rich-text-content h1 {
-      font-size: 2rem;
-      line-height: 1.2;
-    }
-    
-    .rich-text-content h2 {
-      font-size: 1.75rem;
-      line-height: 1.2;
-    }
-    
-    .rich-text-content h3 {
       font-size: 1.5rem;
-      line-height: 1.3;
+      line-height: 1.2;
     }
     
-    .rich-text-content h4 {
-      font-size: 1.25rem;
-      line-height: 1.3;
-    }
-    
-    .rich-text-content h5, 
-    .rich-text-content h6 {
-      font-size: 1.1rem;
-      line-height: 1.4;
+    .rich-text-content h1:first-child,
+    .rich-text-content h2:first-child,
+    .rich-text-content h3:first-child,
+    .rich-text-content h4:first-child,
+    .rich-text-content h5:first-child,
+    .rich-text-content h6:first-child {
+      margin-top: 0;
     }
     
     .rich-text-content p {
@@ -88,10 +73,20 @@ const CustomPageSection: React.FC<CustomPageSectionProps> = ({
       color: #1E1E1E;
     }
     
+    .rich-text-content p:last-child {
+      margin-bottom: 0;
+    }
+    
     .rich-text-content ul, 
     .rich-text-content ol {
       margin-left: 1.5rem;
       margin-bottom: 1.5rem;
+      padding-left: 0;
+    }
+    
+    .rich-text-content ul:last-child, 
+    .rich-text-content ol:last-child {
+      margin-bottom: 0;
     }
     
     .rich-text-content li {
@@ -101,13 +96,19 @@ const CustomPageSection: React.FC<CustomPageSectionProps> = ({
       font-family: 'Roboto Condensed', sans-serif;
     }
     
+    .rich-text-content li:last-child {
+      margin-bottom: 0;
+    }
+    
     .rich-text-content blockquote {
       border-left: 4px solid #38AE34;
       padding-left: 1rem;
-      margin-left: 0;
-      margin-right: 0;
-      margin-bottom: 1.5rem;
+      margin: 0 0 1.5rem 0;
       font-style: italic;
+    }
+    
+    .rich-text-content blockquote:last-child {
+      margin-bottom: 0;
     }
     
     .rich-text-content blockquote p {
@@ -117,6 +118,7 @@ const CustomPageSection: React.FC<CustomPageSectionProps> = ({
     .rich-text-content a {
       color: #38AE34;
       text-decoration: none;
+      transition: text-decoration 0.2s;
     }
     
     .rich-text-content a:hover {
@@ -129,6 +131,15 @@ const CustomPageSection: React.FC<CustomPageSectionProps> = ({
     
     .rich-text-content em {
       font-style: italic;
+    }
+
+    /* Fix spacing between consecutive elements */
+    .rich-text-content > *:first-child {
+      margin-top: 0;
+    }
+    
+    .rich-text-content > *:last-child {
+      margin-bottom: 0;
     }
   `;
 
@@ -181,7 +192,7 @@ const CustomPageSection: React.FC<CustomPageSectionProps> = ({
             {/* Optional Image */}
             {image && (
               <div className="mt-6 md:mt-0 md:w-1/2 lg:w-2/5">
-                <div className="overflow-hidden rounded-md shadow-sm">
+                <div className="overflow-hidden">
                   <Image 
                     src={image.url.startsWith('/') ? `${API_URL}${image.url}` : image.url} 
                     alt={image.alt || 'Section image'} 

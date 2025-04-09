@@ -669,12 +669,13 @@ export const getCustomPage = async (slug) => {
 };
 
 // Modify getCustomPages to fetch full data and support fetching all pages
-export const getCustomPages = async (page = 1, pageSize = 10) => {
+export const getCustomPages = async (page = 1, pageSize = 10, forMenu = false) => {
   try {
-    // Construct URL based on pagination parameters
+    // Construct URL based on pagination parameters and menu filter
+    const menuFilter = forMenu ? '&where[showInMenu][equals]=true' : '';
     const url = page && pageSize
-      ? `${API_URL}/api/custom-pages?filters[status][equals]=published&depth=2&pagination[page]=${page}&pagination[pageSize]=${pageSize}&sort=title:asc`
-      : `${API_URL}/api/custom-pages?filters[status][equals]=published&depth=2&limit=1000&sort=title:asc`; // Fetch all (up to 1000) with depth=2
+      ? `${API_URL}/api/custom-pages?where[status][equals]=published${menuFilter}&depth=2&pagination[page]=${page}&pagination[pageSize]=${pageSize}&sort=title:asc`
+      : `${API_URL}/api/custom-pages?where[status][equals]=published${menuFilter}&depth=2&limit=1000&sort=title:asc`; // Fetch all (up to 1000) with depth=2
       
     console.log(`Fetching custom pages from URL: ${url}`);
 

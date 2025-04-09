@@ -6,6 +6,8 @@ import ImageGallery from './ImageGallery';
 import ProductCharacteristics from './ProductCharacteristics';
 import BuyButtons from './BuyButtons';
 import Description from './Description';
+import { API_URL } from '@/services/api';
+import { LexicalContent } from '@/utils/lexicalToHtml';
 
 interface ProductDetailsProps {
   product: Product;
@@ -38,23 +40,39 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
     description: productDescription,
     specifications,
     marketplaceLinks,
-    distributors 
+    distributors,
+    images = []
   } = product.attributes;
 
-  // Extract the image URL from the product data structure
-  const imageUrl = product?.attributes?.image?.data?.attributes?.url;
-  const hasRealImage = imageUrl && !imageUrl.includes("placehold.co");
+  // Extract the main image URL and make it absolute if needed
+  let mainImageUrl = product?.attributes?.image?.data?.attributes?.url;
+  if (mainImageUrl && mainImageUrl.startsWith('/')) {
+    mainImageUrl = `${API_URL}${mainImageUrl}`;
+  }
 
-  // Create thumbnails array
+  // Create thumbnails array from actual product images
   const thumbnails: Thumbnail[] = [
-    { id: 1, url: hasRealImage ? imageUrl : null },
-    { id: 2, url: null },
-    { id: 3, url: null },
-    { id: 4, url: null },
-    { id: 5, url: null },
+    // Add the main image first
+    { id: 1, url: mainImageUrl || null },
+    // Add additional images from the images array
+    ...images.map((img, index) => {
+      let imgUrl = img.image?.url;
+      if (imgUrl && imgUrl.startsWith('/')) {
+        imgUrl = `${API_URL}${imgUrl}`;
+      }
+      return {
+        id: index + 2, // Start from 2 since main image is 1
+        url: imgUrl || null
+      };
+    }),
+    // Fill remaining slots with null thumbnails if needed
+    ...Array(Math.max(0, 4 - images.length)).fill(null).map((_, index) => ({
+      id: images.length + 2 + index,
+      url: null
+    }))
   ];
 
-  // Create characteristics array for the ProductCharacteristics component (excluding OEM which is handled separately)
+  // Create characteristics array for the ProductCharacteristics component
   const characteristics: Characteristic[] = [
     { label: "Марка авто", value: brand || "Н/Д" },
     { label: "Модель", value: model || "Н/Д" },
@@ -93,7 +111,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
 
   return (
     <div className="flex flex-wrap gap-10 bg-white p-14 max-md:px-5">
-      <ImageGallery mainImageUrl={imageUrl} thumbnails={thumbnails} />
+      <ImageGallery mainImageUrl={mainImageUrl} thumbnails={thumbnails} />
       <div className="flex flex-col flex-1 bg-white min-w-[240px] max-md:max-w-full">
         <div className="text-2xl font-bold mb-4">{product.attributes.name}</div>
         <div className="mb-6">
@@ -119,7 +137,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
           marketplaces={otherMarketplaces}
           distributors={formattedDistributors}
         />
-        <Description text={productDescription} />
+        <Description text={productDescription as (string | LexicalContent)} />
       </div>
     </div>
   );

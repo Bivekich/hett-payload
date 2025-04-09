@@ -23,17 +23,20 @@ const NewsCard: React.FC<NewsCardProps> = ({
 
   return (
     <div
-      className={`flex flex-col grow p-4 text-base leading-snug ${bgColorClass} hover:shadow-lg transition-all duration-300 h-full cursor-pointer`}
+      className={`flex flex-col grow p-4 text-base leading-snug ${bgColorClass} transition-all duration-300 h-full cursor-pointer`}
     >
       {imageUrl && (
-        <div className="relative w-full aspect-[2.11]">
+        <div className="relative w-full h-[200px]">
           <Image
             loading="lazy"
             src={imageUrl}
+            height={380}
+            width={380}
             alt="News article thumbnail"
-            className="object-cover"
-            fill
+            className="object-contain rounded-sm"
+            
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+         
           />
         </div>
       )}

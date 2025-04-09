@@ -6,6 +6,7 @@ import Button from "./Button";
 import Image from "next/image";
 import noItemImage from "@/assets/noItem.png";
 import { API_URL } from "@/services/api";
+import { useRouter } from "next/navigation";
 
 // Product attribute interfaces
 interface ProductAttributes {
@@ -65,6 +66,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({
 };
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const router = useRouter();
   const { name, article, oem, brand, model, slug } = product.attributes;
 
   // Extract the image URL from the product data structure
@@ -81,12 +83,20 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   // Only use the actual image URL if it exists and is not a placeholder
   const hasRealImage = imageUrl && !isPlaceholderImage;
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Only navigate if the click wasn't on the button
+    if (!(e.target as HTMLElement).closest('.card-button')) {
+      router.push(`/catalog/product/${slug}`);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="bg-white rounded-none overflow-hidden cursor-pointer hover:shadow-md transition-all flex flex-col h-full"
+      onClick={handleCardClick}
     >
       {/* Fixed height container for consistent image size */}
       <div className="flex items-center justify-center h-[200px] p-4 relative">
@@ -121,7 +131,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
           <ProductDetails oemNumber={oem} brand={brand} model={model} />
         </div>
-        <div className="mt-auto">
+        <div className="mt-auto card-button">
           <Button
             label="Подробнее о товаре"
             href={`/catalog/product/${slug}`}

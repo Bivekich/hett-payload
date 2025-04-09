@@ -140,7 +140,7 @@ export interface Distributor {
 export interface Product extends BaseContent {
   name: string;
   slug: string;
-  sku?: string;
+  article: string;
   price?: number;
   description?: RichTextContent; // Rich text content
   shortDescription?: string;

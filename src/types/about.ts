@@ -41,7 +41,10 @@ export interface AboutFeature {
 export interface ProductionSection {
   title: string;
   description: LexicalContent; // Rich text content
-  image: PayloadMedia;
+  images?: {
+    image: PayloadMedia;
+    alt?: string;
+  }[];
 }
 
 // Partner in the buy section
@@ -65,8 +68,8 @@ export interface Distributor {
   title?: string;
   website?: string;
   websiteUrl?: string;
-  image?: PayloadMedia;
   logo?: PayloadMedia;
+  image?: PayloadMedia;
   buttonText?: string;
   buttonUrl?: string;
   features?: DistributorFeature[];
@@ -86,7 +89,7 @@ export interface AboutData {
   id: string;
   title: string;
   mainContent: LexicalContent; // Rich text content
-  mainImage: PayloadMedia;
+  mainImage?: PayloadMedia;
   features: AboutFeature[];
   productionSection: ProductionSection;
   buySection: BuySection;

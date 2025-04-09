@@ -30,7 +30,7 @@ const convertCmsProductToProduct = (cmsProduct: CmsProduct): Product => {
     attributes: {
       name: cmsProduct.name,
       slug: cmsProduct.slug,
-      article: cmsProduct.sku || '',
+      article: cmsProduct.article || '',
       price: cmsProduct.price ? cmsProduct.price.toString() : '',
       brand: typeof cmsProduct.brand === 'string' ? cmsProduct.brand : cmsProduct.brand?.name || '',
       model: typeof cmsProduct.model === 'string' ? cmsProduct.model : cmsProduct.model?.name || '',

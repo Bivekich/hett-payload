@@ -461,7 +461,11 @@ export async function sendVinRequest(data: VinRequestData): Promise<{ telegram: 
   const telegramResult = await sendTelegramMessage(telegramMessage);
 
   const { text, html } = formatVinRequestForEmail(data);
-  const emailResult = await sendEmail('Новый запрос по VIN', text, html);
+  const emailResult = await sendEmail(
+    `[hettautomotive.ru] Запрос по VIN от ${data.name}`,
+    text,
+    html
+  );
 
   return {
     telegram: telegramResult,
@@ -477,7 +481,11 @@ export async function sendContactForm(data: ContactFormData): Promise<{ telegram
   const telegramResult = await sendTelegramMessage(telegramMessage);
 
   const { text, html } = formatContactFormForEmail(data);
-  const emailResult = await sendEmail('Новое сообщение с формы обратной связи', text, html);
+  const emailResult = await sendEmail(
+    `[hettautomotive.ru] Сообщение с формы обратной связи от ${data.name || 'посетителя'}`,
+    text,
+    html
+  );
 
   return {
     telegram: telegramResult,

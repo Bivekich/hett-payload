@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Container from "@/components/Container";
 import { getContactData } from "@/services/api";
-
+import LoadingSpinner from "@/components/LoadingSpinner";
 // Types for our contact items
 interface ContactItem {
   title?: string;
@@ -53,7 +53,9 @@ const ContactInfo = () => {
     return (
       <div className="bg-[#F5F5F5] py-12">
         <Container>
-          <div className="text-center">Loading contact information...</div>
+          <div className="text-center">
+            <LoadingSpinner />
+          </div>
         </Container>
       </div>
     );
@@ -103,7 +105,7 @@ const ContactInfo = () => {
             const isHeaderItem = item.title && (!item.text1 || item.text1 === '');
 
             return (
-              <div key={index} className={`${widthClass} p-2 mb-4`}>
+              <div key={index} className={`${widthClass} p-2 mb-1 md:mb-4`}>
                 <div className="h-full">
                   {/* Title - if present */}
                   {item.title ? (
@@ -111,8 +113,8 @@ const ContactInfo = () => {
                       {item.title}
                     </h2>
                   ) : (
-                    // Add empty spacing div if some items have titles but this one doesn't
-                    hasTitles && <div className="h-[42px] mb-2"></div>
+                    // Add empty spacing div only on non-mobile if some items have titles but this one doesn't
+                    hasTitles && <div className="hidden md:block h-[42px] mb-2"></div>
                   )}
 
                   {/* Text content - if present */}

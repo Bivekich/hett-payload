@@ -116,7 +116,7 @@ const NewsSection = () => {
         </h2>
 
         <div className="mt-10 w-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {currentNews.map((news) => (
               <div key={news.id} className="flex flex-col">
                 <Link href={`/news/${news.slug}/${news.id}`} className="h-full">
@@ -139,7 +139,7 @@ const NewsSection = () => {
           </div>
         </div>
 
-        <div className="flex justify-between items-center mt-10">
+        <div className="flex flex-col md:flex-row gap-y-4 justify-between md:items-center mt-10">
           <div className="flex items-center gap-8">
             <div className="flex gap-4 items-center">
               <SliderButton
@@ -148,7 +148,7 @@ const NewsSection = () => {
                 ariaLabel="Previous slide"
                 disabled={!hasMultiplePages}
               />
-              <span className="text-xl font-bold text-center leading-none text-white roboto-condensed-bold">
+              <span className="text-base md:text-xl font-bold text-center leading-none text-white roboto-condensed-bold">
                 {formatSlideNumber(currentSlide)} /{" "}
                 {formatSlideNumber(totalSlides - 1)}
               </span>
@@ -164,7 +164,7 @@ const NewsSection = () => {
             label="Все новости"
             href="/news"
             variant="secondary"
-            className="inline-flex"
+            className="inline-flex order-1 sm:order-2"
           />
         </div>
       </div>

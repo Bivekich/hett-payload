@@ -1,9 +1,7 @@
 // Product interfaces
 export interface ProductImage {
-  data?: {
-    attributes?: {
-      url?: string;
-    };
+  image: {
+    url?: string;
   };
 }
 
@@ -42,11 +40,33 @@ export interface ProductAttributes {
   model: string;
   modification: string;
   oem: string;
-  image?: ProductImage;
-  description?: string;
-  specifications?: Specification[];
-  marketplaceLinks?: MarketplaceLinks;
-  distributors?: Distributor[];
+  image?: {
+    data?: {
+      attributes?: {
+        url?: string;
+      };
+    };
+  };
+  images?: ProductImage[];
+  description?: string | object;
+  specifications?: Array<{
+    name: string;
+    value: string;
+  }>;
+  marketplaceLinks?: {
+    ozon?: string;
+    wildberries?: string;
+    others?: Array<{
+      name: string;
+      url: string;
+      logo?: string;
+    }>;
+  };
+  distributors?: Array<{
+    name: string;
+    url?: string;
+    location?: string;
+  }>;
 }
 
 export interface Product {

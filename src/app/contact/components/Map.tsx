@@ -54,7 +54,10 @@ const Map = () => {
   
   // Get the map configuration
   const mapConfig = contactData.mapSection;
-  const embedUrl = mapConfig.embedUrl || "https://yandex.ru/map-widget/v1/?um=constructor%3A6d38c6c66e895056c2d30cee5b28604470ed7b83e2df1c1c96b722edff797552&amp;source=constructor";
+  const baseEmbedUrl = mapConfig.embedUrl || "https://yandex.ru/map-widget/v1/?um=constructor%3A6d38c6c66e895056c2d30cee5b28604470ed7b83e2df1c1c96b722edff797552";
+  
+  // Add parameters to disable map controls and movement
+  const embedUrl = `${baseEmbedUrl}&amp;scroll=false&amp;zoom=false&amp;controls=false`;
   const height = mapConfig.height || 540;
   const title = mapConfig.title || "Hett Automotive Map";
 

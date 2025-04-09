@@ -1,11 +1,12 @@
 "use client";
 
 import React from "react";
+import { lexicalToHtml } from "@/utils/lexicalToHtml";
 
 // Define types for Lexical content
 interface LexicalContent {
   root: {
-    children: LexicalNode[];
+    children: unknown[];
     direction: string | null;
     format: string;
     indent: number;
@@ -14,69 +15,9 @@ interface LexicalContent {
   };
 }
 
-interface LexicalNode {
-  type: string;
-  children?: LexicalNode[];
-  text?: string;
-  [key: string]: unknown;
-}
-
 interface DescriptionProps {
   text?: string | LexicalContent; // Can be a string or a rich text object
 }
-
-// Function to extract plain text from Lexical rich text format
-const extractPlainTextFromRichText = (richText: LexicalContent): string => {
-  if (!richText || !richText.root || !richText.root.children) {
-    return '';
-  }
-
-  // Process each node and check if it has meaningful content
-  const paragraphs = richText.root.children
-    .map((node: LexicalNode) => {
-      // Handle paragraph nodes
-      if (node.type === 'paragraph' && node.children) {
-        const paragraphText = node.children
-          .map((child: LexicalNode) => child.text || '')
-          .join('');
-        return paragraphText.trim(); // Return trimmed text
-      }
-      // Handle heading nodes
-      else if (node.type?.startsWith('heading') && node.children) {
-        const headingText = node.children
-          .map((child: LexicalNode) => child.text || '')
-          .join('');
-        return headingText.trim(); // Return trimmed text
-      }
-      // Handle list nodes
-      else if ((node.type === 'ul' || node.type === 'ol') && node.children) {
-        const listItems = node.children
-          .map((listItem: LexicalNode) => {
-            if (listItem.children) {
-              return '• ' + listItem.children
-                .map((child: LexicalNode) => {
-                  if (child.children) {
-                    return child.children
-                      .map((textNode: LexicalNode) => textNode.text || '')
-                      .join('');
-                  }
-                  return child.text || '';
-                })
-                .join('');
-            }
-            return '';
-          })
-          .filter(item => item.trim() !== '') // Only keep non-empty items
-          .join('\n');
-        return listItems;
-      }
-      return '';
-    })
-    .filter(text => text.trim() !== ''); // Filter out empty paragraphs
-  
-  // Join paragraphs with a single newline instead of double
-  return paragraphs.join('\n');
-};
 
 const Description: React.FC<DescriptionProps> = ({ text }) => {
   // If there's no description text, don't render anything
@@ -84,26 +25,48 @@ const Description: React.FC<DescriptionProps> = ({ text }) => {
     return null;
   }
   
-  // Check if text is a rich text object
-  const isRichText = typeof text === 'object' && text !== null && 'root' in text;
+  let lexicalContent: LexicalContent | null = null;
+  let displayContent = '';
+
+  // Handle different formats of text input
+  try {
+    if (typeof text === 'string') {
+      // Try to parse if it's a JSON string
+      lexicalContent = JSON.parse(text);
+    } else if (typeof text === 'object' && text !== null) {
+      lexicalContent = text;
+    }
+  } catch (e) {
+    // If parsing fails, treat it as plain text
+    console.error('Error parsing Lexical content:', e);
+    displayContent = String(text || '');
+  }
   
-  // Extract plain text if it's a rich text object
-  const displayText = isRichText ? extractPlainTextFromRichText(text as LexicalContent) : String(text || '');
+  // Convert to HTML if it's valid Lexical content
+  if (lexicalContent && 'root' in lexicalContent) {
+    try {
+      displayContent = lexicalToHtml(lexicalContent);
+    } catch (e) {
+      console.error('Error converting Lexical to HTML:', e);
+      displayContent = String(text || '');
+    }
+  }
   
-  // If after extraction we still don't have text, don't render
-  if (!displayText || displayText.trim() === '') {
+  // If after conversion we still don't have content, don't render
+  if (!displayContent || displayContent.trim() === '') {
     return null;
   }
   
   return (
-    <>
-      <div className="text-[28px] font-extrabold font-[Roboto_Condensed] text-black mb-4">
+    <div className="mb-8">
+      <h2 className="text-[28px] font-extrabold font-[Roboto_Condensed] text-black mb-4">
         Описание
-      </div>
-      <div className="text-[16px] whitespace-pre-line font-[Roboto_Condensed] text-black">
-        {displayText}
-      </div>
-    </>
+      </h2>
+      <div 
+        className="description-content text-[16px] leading-[1.4] font-[Roboto_Condensed] text-[#181818]"
+        dangerouslySetInnerHTML={{ __html: displayContent }}
+      />
+    </div>
   );
 };
 

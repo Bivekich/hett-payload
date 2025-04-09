@@ -67,8 +67,8 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
         )}
       </div>
 
-      {/* Thumbnail Images - Only show if there are valid thumbnails */}
-      {validThumbnails.length > 0 && (
+      {/* Thumbnail Images - Only show if there are more than one valid thumbnail */}
+      {validThumbnails.length > 1 && (
         <div className="flex flex-wrap gap-5 mt-6 max-md:max-w-full">
           {validThumbnails.map((thumbnail) => (
             <button

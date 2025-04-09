@@ -173,12 +173,18 @@ const Banner = () => {
               <div className="relative z-10 w-full">
                 <div
                   className={`max-w-[1280px] mx-auto px-4 md:px-0 ${
-                    activeSlide === index && index === 0
-                      ? "md:pl-10 lg:pl-46"
-                      : activeSlide === index && index === 1
-                      ? "md:pl-8 lg:pl-6"
-                      : activeSlide === index && index === 2
-                      ? "md:pl-6 lg:pl-0"
+                    activeSlide === index && slides.length === 3
+                      ? index === 0
+                        ? "md:pl-10 lg:pl-46"
+                        : index === 1
+                        ? "md:pl-8 lg:pl-6"
+                        : "md:pl-6 lg:pl-0"
+                      : activeSlide === index && slides.length === 2
+                      ? index === 0
+                        ? "md:pl-10 lg:pl-26"
+                        : "md:pl-8 lg:pl-12"
+                      : activeSlide === index && slides.length === 1
+                      ? "md:pl-10 lg:pl-6"
                       : ""
                   }`}
                 >

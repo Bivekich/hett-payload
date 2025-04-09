@@ -75,7 +75,7 @@ export const convertCmsProductToProduct = (cmsProduct: CmsProduct) => {
     attributes: {
       name: cmsProduct.name,
       slug: cmsProduct.slug,
-      article: cmsProduct.sku || '',
+      article: cmsProduct.article || '',
       price: cmsProduct.price ? cmsProduct.price.toString() : '',
       brand: typeof cmsProduct.brand === 'string' ? cmsProduct.brand : cmsProduct.brand?.name || '',
       model: typeof cmsProduct.model === 'string' ? cmsProduct.model : cmsProduct.model?.name || '',
@@ -439,9 +439,18 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     // For debugging: log the categoryId we're filtering by
     console.log(`Found category with ID ${categoryObj.id}`);
     
-    // If no products loaded yet, we can't filter by products
+    // If we have a brand filter active, maintain it regardless of products
+    if (filterBrand) {
+      const selectedBrand = brands.find(b => b.slug === filterBrand);
+      if (selectedBrand) {
+        setFilteredBrands([selectedBrand]);
+        return;
+      }
+    }
+    
+    // If no products loaded yet and no specific brand filter, show all brands for the category
     if (cmsProducts.length === 0) {
-      console.log("No products loaded yet, can't filter brands by products");
+      console.log("No products loaded yet, showing all brands for category");
       setFilteredBrands(brands);
       return;
     }
@@ -497,7 +506,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
       console.log(`No brands found for category ${filterCategory}, showing all brands`);
       setFilteredBrands(brands);
     }
-  }, [metadataLoaded, filterCategory, categories, brands, cmsProducts]);
+  }, [metadataLoaded, filterCategory, categories, brands, cmsProducts, filterBrand]);
 
   // Filter models based on current brand selection
   useEffect(() => {
@@ -916,47 +925,45 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   const categoryOptions = [
     { value: "", label: "Все категории" },
     ...categories.map((cat) => ({
-    value: cat.slug,
-    label: cat.name,
+      value: cat.slug,
+      label: cat.name,
     }))
   ];
   
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const subcategoryOptions = [
     { value: "", label: "Все подкатегории" },
     ...subcategories
-    .filter(sub => {
+      .filter(sub => {
         if (!formCategory) return true;
-      
-      // Check if subcategory belongs to selected category
-      if (typeof sub.category === 'object' && sub.category) {
+        
+        // Check if subcategory belongs to selected category
+        if (typeof sub.category === 'object' && sub.category) {
           return sub.category.slug === formCategory;
-      }
-      return false;
-    })
-    .map((sub) => ({
-      value: sub.id.toString(),
-      label: sub.attributes.name,
+        }
+        return false;
+      })
+      .map((sub) => ({
+        value: sub.id.toString(),
+        label: sub.attributes.name,
       }))
   ];
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const thirdSubcategoryOptions = [
     { value: "", label: "Все третьи подкатегории" },
     ...thirdSubcategories
-    .filter(third => {
-      if (!formSubcategory) return true;
-      
-      // Check if third subcategory belongs to selected subcategory
-      if (typeof third.subcategory === 'object' && third.subcategory) {
-        return third.subcategory.id === formSubcategory.id;
-      }
-      return false;
-    })
-    .map((third) => ({
-      value: third.id.toString(),
-      label: third.attributes.name,
-    }))
+      .filter(third => {
+        if (!formSubcategory) return true;
+        
+        // Check if third subcategory belongs to selected subcategory
+        if (typeof third.subcategory === 'object' && third.subcategory) {
+          return third.subcategory.id === formSubcategory.id;
+        }
+        return false;
+      })
+      .map((third) => ({
+        value: third.id.toString(),
+        label: third.attributes.name,
+      }))
   ];
 
   const brandOptions = [
@@ -994,7 +1001,6 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     setFormModification(null);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSubcategoryChange = (value: string) => {
     if (value) {
       const sub = subcategories.find((s) => s.id.toString() === value);
@@ -1006,7 +1012,6 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     setFormThirdSubcategory(null);
   };
   
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleThirdSubcategoryChange = (value: string) => {
     if (value) {
       const third = thirdSubcategories.find((t) => t.id.toString() === value);
@@ -1168,41 +1173,39 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
 
           {/* Filters section */}
           <div className={`mb-6 md:mb-8 ${showMobileFilters || 'hidden md:block'}`}>
-            <div className="flex flex-col md:flex-row gap-3 md:gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-7 gap-3 md:gap-5">
               <Select
                 options={categoryOptions}
                 value={formCategory || ""}
                 onChange={handleCategoryChange}
                 placeholder="Категория"
-                className="w-full md:flex-2"
+                className="w-full"
               />
-              
               
               <Select
                 options={subcategoryOptions}
                 value={formSubcategory ? formSubcategory.id.toString() : ""}
                 onChange={handleSubcategoryChange}
                 placeholder="Подкатегория"
-                className="w-full md:flex-2"
+                className="w-full"
+                disabled={!formCategory}
               />
-             
 
-              {/*
               <Select
                 options={thirdSubcategoryOptions}
                 value={formThirdSubcategory ? formThirdSubcategory.id.toString() : ""}
                 onChange={handleThirdSubcategoryChange}
                 placeholder="Третья подкатегория"
-                className="w-full md:flex-2"
+                className="w-full"
+                disabled={!formSubcategory}
               />
-              */}
 
               <Select
                 options={brandOptions}
                 value={formBrand || ""}
                 onChange={handleBrandChange}
                 placeholder="Марка"
-                className="w-full md:flex-2"
+                className="w-full"
               />
 
               <Select
@@ -1210,7 +1213,8 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
                 value={formModel || ""}
                 onChange={handleModelChange}
                 placeholder="Модель"
-                className="w-full md:flex-2"
+                className="w-full"
+                disabled={!formBrand}
               />
 
               <Select
@@ -1218,17 +1222,16 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
                 value={formModification || ""}
                 onChange={(value) => setFormModification(value || null)}
                 placeholder="Модификация"
-                className="w-full md:flex-2"
+                className="w-full"
+                disabled={!formModel}
               />
 
-              <div className="w-full flex-2">
-                <Button
-                  label="Найти"
-                  variant="noArrow2"
-                  className="h-[42px] w-full hover:text-black"
-                  onClick={handleSearch}
-                />
-              </div>
+              <Button
+                label="Найти"
+                variant="noArrow2"
+                className="h-[42px] w-full hover:text-black"
+                onClick={handleSearch}
+              />
             </div>
           </div>
 
@@ -1242,7 +1245,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
               <div className="bg-red-50 p-4 rounded-lg text-red-600 text-center">
                 {error}
               </div>
-            ) : products.length === 0 && (hasActiveSearch || searchParams?.get('search')) ? (
+            ) : products.length === 0 && (hasActiveSearch || searchParams?.get('search') || filterCategory || filterSubcategory || filterThirdSubcategory || filterBrand || filterModel || filterModification) ? (
               <div className="bg-[#F5F5F5] p-4 sm:p-8 rounded-lg text-center">
                 <h3 className="text-lg md:text-xl font-medium text-[#3B3B3B] mb-2">
                   Ничего не найдено

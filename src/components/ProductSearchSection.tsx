@@ -6,7 +6,7 @@ import CategoryCard from "./CategoryCard";
 import Button from "./uiKit/Button";
 import Select from "./uiKit/Select";
 import VinRequestModal from "./uiKit/VinRequestModal";
-import { getCategories, getBrands, getModels, getModifications, getSubcategories, getThirdSubcategories } from '../services/catalogApi';
+import { getCategories, getBrands, getModels, getModifications, getSubcategories, getThirdSubcategories, getCatalogProducts } from '../services/catalogApi';
 import { Category, Brand, Model, Modification, Subcategory, ThirdSubcategory } from '../types/catalog';
 import { API_URL } from '@/services/api';
 
@@ -16,6 +16,20 @@ interface CategoryCardData {
   title: string;
   iconSrc: string;
   slug: string;
+}
+
+// Add interface for filters at the top of the file after other interfaces
+interface CatalogFilters {
+  brand?: string;
+  category?: string;
+  subcategory?: string;
+  thirdsubcategory?: string;
+  model?: string;
+  modification?: string;
+  depth?: number;
+  page?: number;
+  limit?: number;
+  search?: string;
 }
 
 const ProductSearchSection = () => {
@@ -31,9 +45,7 @@ const ProductSearchSection = () => {
   
   // State variables for filter options
   const [categoryOptions, setCategoryOptions] = useState<{value: string, label: string}[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [subcategoryOptions, setSubcategoryOptions] = useState<{value: string, label: string}[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [thirdSubcategoryOptions, setThirdSubcategoryOptions] = useState<{value: string, label: string}[]>([]);
   const [brandOptions, setBrandOptions] = useState<{value: string, label: string}[]>([]);
   const [modelOptions, setModelOptions] = useState<{value: string, label: string}[]>([]);
@@ -166,42 +178,51 @@ const ProductSearchSection = () => {
     fetchFilterOptions();
   }, []);
 
-  // Fetch models filtered by selected brand
+  // Fetch models filtered by selected brand and current filters
   useEffect(() => {
     const fetchModelsByBrand = async () => {
       if (!selectedBrand) {
-        try {
-          // If no brand selected, load all models
-          const modelsResponse = await getModels();
-          const formattedModels = [
-            { value: "", label: "Все модели" },
-            ...modelsResponse.docs.map((model: Model) => ({
-              value: model.slug,
-              label: model.name
-            }))
-          ];
-          setModelOptions(formattedModels);
-          
-          // Reset selected model when brand changes
-          setSelectedModel('');
-        } catch (err) {
-          console.error('Error fetching all models:', err);
-        }
+        setModelOptions([{ value: "", label: "Все модели" }]);
+        setSelectedModel('');
         return;
       }
       
       try {
+        // Build filters for product query
+        const filters: CatalogFilters = {
+          brand: selectedBrand
+        };
+        if (selectedCategory) filters.category = selectedCategory;
+        if (selectedSubcategory) filters.subcategory = selectedSubcategory;
+        if (selectedThirdSubcategory) filters.thirdsubcategory = selectedThirdSubcategory;
+
+        // Fetch products with current filters to get available models
+        const productsResponse = await getCatalogProducts({
+          ...filters,
+          depth: 1
+        });
+
+        // Create a Set of model slugs that have products
+        const modelsWithProducts = new Set(
+          productsResponse.docs
+            .map(product => typeof product.model === 'object' ? product.model?.slug : null)
+            .filter(Boolean)
+        );
+
         // Fetch models for the selected brand
         const modelsResponse = await getModels({
           brand: selectedBrand
         });
         
+        // Filter models to only include those with products
         const formattedModels = [
           { value: "", label: "Все модели" },
-          ...modelsResponse.docs.map((model: Model) => ({
-            value: model.slug,
-            label: model.name
-          }))
+          ...modelsResponse.docs
+            .filter(model => modelsWithProducts.has(model.slug))
+            .map((model: Model) => ({
+              value: model.slug,
+              label: model.name
+            }))
         ];
         
         setModelOptions(formattedModels);
@@ -209,9 +230,11 @@ const ProductSearchSection = () => {
         // Reset selected model if it's not in the filtered options
         if (selectedModel && !formattedModels.some(option => option.value === selectedModel)) {
           setSelectedModel('');
+          setSelectedModification(''); // Reset modification since model is reset
         }
       } catch (err) {
         console.error('Error fetching models by brand:', err);
+        setModelOptions([{ value: "", label: "Все модели" }]);
       }
     };
     
@@ -219,44 +242,54 @@ const ProductSearchSection = () => {
     if (!isLoading) {
       fetchModelsByBrand();
     }
-  }, [selectedBrand, isLoading, selectedModel]);
+  }, [selectedBrand, selectedCategory, selectedSubcategory, selectedThirdSubcategory, isLoading, selectedModel]);
 
-  // Fetch modifications filtered by selected model
+  // Fetch modifications filtered by selected model and brand
   useEffect(() => {
     const fetchModificationsByModel = async () => {
-      if (!selectedModel) {
-        try {
-          // If no model selected, load all modifications
-          const modificationsResponse = await getModifications();
-          const formattedModifications = [
-            { value: "", label: "Все модификации" },
-            ...modificationsResponse.docs.map((modification: Modification) => ({
-              value: modification.slug,
-              label: modification.name
-            }))
-          ];
-          setModificationOptions(formattedModifications);
-          
-          // Reset selected modification when model changes
-          setSelectedModification('');
-        } catch (err) {
-          console.error('Error fetching all modifications:', err);
-        }
+      if (!selectedModel || !selectedBrand) {
+        setModificationOptions([{ value: "", label: "Все модификации" }]);
+        setSelectedModification('');
         return;
       }
       
       try {
+        // Build filters for product query
+        const filters: CatalogFilters = {
+          brand: selectedBrand,
+          model: selectedModel
+        };
+        if (selectedCategory) filters.category = selectedCategory;
+        if (selectedSubcategory) filters.subcategory = selectedSubcategory;
+        if (selectedThirdSubcategory) filters.thirdsubcategory = selectedThirdSubcategory;
+
+        // Fetch products with current filters to get available modifications
+        const productsResponse = await getCatalogProducts({
+          ...filters,
+          depth: 1
+        });
+
+        // Create a Set of modification slugs that have products
+        const modificationsWithProducts = new Set(
+          productsResponse.docs
+            .map(product => typeof product.modification === 'object' ? product.modification?.slug : null)
+            .filter(Boolean)
+        );
+
         // Fetch modifications for the selected model
         const modificationsResponse = await getModifications({
           model: selectedModel
         });
         
+        // Filter modifications to only include those with products
         const formattedModifications = [
           { value: "", label: "Все модификации" },
-          ...modificationsResponse.docs.map((modification: Modification) => ({
-            value: modification.slug,
-            label: modification.name
-          }))
+          ...modificationsResponse.docs
+            .filter(modification => modificationsWithProducts.has(modification.slug))
+            .map((modification: Modification) => ({
+              value: modification.slug,
+              label: modification.name
+            }))
         ];
         
         setModificationOptions(formattedModifications);
@@ -267,6 +300,7 @@ const ProductSearchSection = () => {
         }
       } catch (err) {
         console.error('Error fetching modifications by model:', err);
+        setModificationOptions([{ value: "", label: "Все модификации" }]);
       }
     };
     
@@ -274,29 +308,14 @@ const ProductSearchSection = () => {
     if (!isLoading) {
       fetchModificationsByModel();
     }
-  }, [selectedModel, isLoading, selectedModification]);
+  }, [selectedModel, selectedBrand, selectedCategory, selectedSubcategory, selectedThirdSubcategory, isLoading, selectedModification]);
 
   // Fetch subcategories filtered by selected category
   useEffect(() => {
     const fetchSubcategoriesByCategory = async () => {
       if (!selectedCategory) {
-        try {
-          // If no category selected, load all subcategories
-          const subcategoriesResponse = await getSubcategories();
-          const formattedSubcategories = [
-            { value: "", label: "Все подкатегории" },
-            ...subcategoriesResponse.docs.map((subcategory: Subcategory) => ({
-              value: subcategory.slug,
-              label: subcategory.name
-            }))
-          ];
-          setSubcategoryOptions(formattedSubcategories);
-          
-          // Reset selected subcategory when category changes
-          setSelectedSubcategory('');
-        } catch (err) {
-          console.error('Error fetching all subcategories:', err);
-        }
+        setSubcategoryOptions([{ value: "", label: "Все подкатегории" }]);
+        setSelectedSubcategory('');
         return;
       }
       
@@ -306,12 +325,28 @@ const ProductSearchSection = () => {
           category: selectedCategory
         });
         
+        // Fetch products to check which subcategories have products
+        const productsResponse = await getCatalogProducts({
+          category: selectedCategory,
+          depth: 1
+        });
+        
+        // Create a Set of subcategory slugs that have products
+        const subcategoriesWithProducts = new Set(
+          productsResponse.docs
+            .map(product => typeof product.subcategory === 'object' ? product.subcategory?.slug : null)
+            .filter(Boolean)
+        );
+        
+        // Filter subcategories to only include those with products
         const formattedSubcategories = [
           { value: "", label: "Все подкатегории" },
-          ...subcategoriesResponse.docs.map((subcategory: Subcategory) => ({
-            value: subcategory.slug,
-            label: subcategory.name
-          }))
+          ...subcategoriesResponse.docs
+            .filter(subcategory => subcategoriesWithProducts.has(subcategory.slug))
+            .map((subcategory: Subcategory) => ({
+              value: subcategory.slug,
+              label: subcategory.name
+            }))
         ];
         
         setSubcategoryOptions(formattedSubcategories);
@@ -322,6 +357,7 @@ const ProductSearchSection = () => {
         }
       } catch (err) {
         console.error('Error fetching subcategories by category:', err);
+        setSubcategoryOptions([{ value: "", label: "Все подкатегории" }]);
       }
     };
     
@@ -335,23 +371,8 @@ const ProductSearchSection = () => {
   useEffect(() => {
     const fetchThirdSubcategoriesBySubcategory = async () => {
       if (!selectedSubcategory) {
-        try {
-          // If no subcategory selected, load all third subcategories
-          const thirdSubcategoriesResponse = await getThirdSubcategories();
-          const formattedThirdSubcategories = [
-            { value: "", label: "Все третьи подкатегории" },
-            ...thirdSubcategoriesResponse.docs.map((thirdSubcategory: ThirdSubcategory) => ({
-              value: thirdSubcategory.slug,
-              label: thirdSubcategory.name
-            }))
-          ];
-          setThirdSubcategoryOptions(formattedThirdSubcategories);
-          
-          // Reset selected third subcategory when subcategory changes
-          setSelectedThirdSubcategory('');
-        } catch (err) {
-          console.error('Error fetching all third subcategories:', err);
-        }
+        setThirdSubcategoryOptions([{ value: "", label: "Все третьи подкатегории" }]);
+        setSelectedThirdSubcategory('');
         return;
       }
       
@@ -361,12 +382,28 @@ const ProductSearchSection = () => {
           subcategory: selectedSubcategory
         });
         
+        // Fetch products to check which third subcategories have products
+        const productsResponse = await getCatalogProducts({
+          subcategory: selectedSubcategory,
+          depth: 1
+        });
+        
+        // Create a Set of third subcategory slugs that have products
+        const thirdSubcategoriesWithProducts = new Set(
+          productsResponse.docs
+            .map(product => typeof product.thirdsubcategory === 'object' ? product.thirdsubcategory?.slug : null)
+            .filter(Boolean)
+        );
+        
+        // Filter third subcategories to only include those with products
         const formattedThirdSubcategories = [
           { value: "", label: "Все третьи подкатегории" },
-          ...thirdSubcategoriesResponse.docs.map((thirdSubcategory: ThirdSubcategory) => ({
-            value: thirdSubcategory.slug,
-            label: thirdSubcategory.name
-          }))
+          ...thirdSubcategoriesResponse.docs
+            .filter(thirdSubcategory => thirdSubcategoriesWithProducts.has(thirdSubcategory.slug))
+            .map((thirdSubcategory: ThirdSubcategory) => ({
+              value: thirdSubcategory.slug,
+              label: thirdSubcategory.name
+            }))
         ];
         
         setThirdSubcategoryOptions(formattedThirdSubcategories);
@@ -377,6 +414,7 @@ const ProductSearchSection = () => {
         }
       } catch (err) {
         console.error('Error fetching third subcategories by subcategory:', err);
+        setThirdSubcategoryOptions([{ value: "", label: "Все третьи подкатегории" }]);
       }
     };
     
@@ -385,6 +423,77 @@ const ProductSearchSection = () => {
       fetchThirdSubcategoriesBySubcategory();
     }
   }, [selectedSubcategory, isLoading, selectedThirdSubcategory]);
+
+  // Add new useEffect for brand filtering based on category/subcategory/third subcategory
+  useEffect(() => {
+    const fetchBrandsByFilters = async () => {
+      try {
+        // If no filters are selected, show all brands
+        if (!selectedCategory && !selectedSubcategory && !selectedThirdSubcategory) {
+          const brandsResponse = await getBrands();
+          const formattedBrands = [
+            { value: "", label: "Все марки" },
+            ...brandsResponse.docs.map((brand: Brand) => ({
+              value: brand.slug,
+              label: brand.name
+            }))
+          ];
+          setBrandOptions(formattedBrands);
+          return;
+        }
+
+        // Build filters for product query
+        const filters: CatalogFilters = {};
+        if (selectedCategory) filters.category = selectedCategory;
+        if (selectedSubcategory) filters.subcategory = selectedSubcategory;
+        if (selectedThirdSubcategory) filters.thirdsubcategory = selectedThirdSubcategory;
+
+        // Fetch products with current filters to get available brands
+        const productsResponse = await getCatalogProducts({
+          ...filters,
+          depth: 1
+        });
+
+        // Create a Set of brand slugs that have products
+        const brandsWithProducts = new Set(
+          productsResponse.docs
+            .map(product => typeof product.brand === 'object' ? product.brand?.slug : null)
+            .filter(Boolean)
+        );
+
+        // Fetch all brands to filter them
+        const brandsResponse = await getBrands();
+        
+        // Filter brands to only include those with products
+        const formattedBrands = [
+          { value: "", label: "Все марки" },
+          ...brandsResponse.docs
+            .filter(brand => brandsWithProducts.has(brand.slug))
+            .map((brand: Brand) => ({
+              value: brand.slug,
+              label: brand.name
+            }))
+        ];
+
+        setBrandOptions(formattedBrands);
+
+        // Reset selected brand if it's not in the filtered options
+        if (selectedBrand && !formattedBrands.some(option => option.value === selectedBrand)) {
+          setSelectedBrand('');
+          setSelectedModel(''); // Reset model since brand is reset
+          setSelectedModification(''); // Reset modification since brand is reset
+        }
+      } catch (err) {
+        console.error('Error fetching brands by filters:', err);
+        setBrandOptions([{ value: "", label: "Все марки" }]);
+      }
+    };
+
+    // Only run if initial loading is done
+    if (!isLoading) {
+      fetchBrandsByFilters();
+    }
+  }, [selectedCategory, selectedSubcategory, selectedThirdSubcategory, isLoading, selectedBrand]);
 
   // Handlers for filter changes
   const handleBrandChange = (value: string) => {
@@ -404,13 +513,11 @@ const ProductSearchSection = () => {
     setSelectedThirdSubcategory(''); // Reset third subcategory when category changes
   };
   
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSubcategoryChange = (value: string) => {
     setSelectedSubcategory(value);
     setSelectedThirdSubcategory(''); // Reset third subcategory when subcategory changes
   };
   
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleThirdSubcategoryChange = (value: string) => {
     setSelectedThirdSubcategory(value);
   };
@@ -420,8 +527,9 @@ const ProductSearchSection = () => {
     // Build search params
     const searchParams = new URLSearchParams();
     
+    // Always include search query if present, as it can search across name, OEM, and article
     if (searchQuery) {
-      searchParams.set('search', searchQuery);
+      searchParams.set('search', searchQuery.trim());
     }
     
     if (selectedBrand) {
@@ -439,7 +547,8 @@ const ProductSearchSection = () => {
     // Use category and subcategory for navigation path or query parameter
     if (selectedCategory && !selectedSubcategory && !selectedThirdSubcategory) {
       // If only category is selected, navigate to the category page
-      router.push(`/catalog/${selectedCategory}`);
+      const queryString = searchParams.toString() ? `?${searchParams.toString()}` : '';
+      router.push(`/catalog/${selectedCategory}${queryString}`);
     } else {
       // Otherwise use as query parameters
       if (selectedCategory) {
@@ -459,17 +568,18 @@ const ProductSearchSection = () => {
     }
   };
 
+  // Handle keyboard events in the search input (for Enter key)
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearch();
+    }
+  };
+
   // Handle category card click
   const handleCategoryClick = (categorySlug: string) => {
-    // Set the category in the URL params and redirect to catalog
-    const params = new URLSearchParams();
-    params.append('category', categorySlug);
-    
-    // Log action for debugging
-    console.log('Redirecting to catalog with category:', categorySlug);
-    
-    // Navigate to catalog page with category parameter
-    router.push(`/catalog?${params.toString()}`);
+    // Navigate directly to the category page using the path structure
+    router.push(`/catalog/${categorySlug}`);
   };
 
   return (
@@ -484,113 +594,121 @@ const ProductSearchSection = () => {
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Left column: Search bar and filters */}
-            <div className="flex-1 flex flex-col gap-4">
-              {/* Search bar */}
-              <div className="flex gap-2.5 items-center h-[42px] px-5 border border-[#8898A4] hover:border-[#38AE34] focus-within:border-[#38AE34] transition-colors group">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-[#555555] group-focus-within:text-[#38AE34] transition-colors w-6 aspect-square"
-                >
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <path d="m21 21-4.3-4.3"></path>
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Поиск по названию или артикулу"
-                  className="flex-1 text-sm leading-relaxed outline-none roboto-condensed-regular placeholder:text-[#8898A4]"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+            <div className="flex-1 flex flex-col gap-y-4">
+              {/* Search bar and VIN request row */}
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <div className="flex">
+                    <div className="flex-1 border border-[#8898A4] hover:border-[#38AE34] focus-within:border-[#38AE34] transition-colors group h-[42px]">
+                      <div className="flex gap-2.5 items-center px-5 h-full">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-[#555555] group-focus-within:text-[#38AE34]  transition-colors w-6 aspect-square"
+                        >
+                          <circle cx="11" cy="11" r="8"></circle>
+                          <path d="m21 21-4.3-4.3"></path>
+                        </svg>
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          onKeyDown={handleSearchKeyDown}
+                          placeholder="Поиск по названию, артикулу или OEM"
+                          className="flex-1 text-sm leading-relaxed outline-none roboto-condensed-regular placeholder:text-[#8898A4]"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      label="Найти"
+                      variant="noArrow2"
+                      onClick={handleSearch}
+                      className="px-6 hover:text-black"
+                    />
+                  </div>
+                </div>
+                <div className="w-[200px] max-lg:hidden">
+                  <Button
+                    label="Запросить по VIN"
+                    variant="noArrow"
+                    className="flex justify-center items-center w-full border-none"
+                    hideArrow
+                    onClick={() => setIsVinModalOpen(true)}
+                  />
+                </div>
               </div>
 
-              {/* Filters */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {isLoading ? (
-                  // Loading state for filters
-                  <div className="col-span-full flex justify-center items-center py-4">
-                    <div className="animate-spin h-6 w-6 border-t-2 rounded-full border-b-2 border-[#38AE34]"></div>
-                    <span className="ml-2 text-sm text-gray-600">Загрузка фильтров...</span>
-                  </div>
-                ) : (
-                  <>
-                    <Select
-                      value={selectedCategory}
-                      onChange={handleCategoryChange}
-                      placeholder="Категория"
-                      options={categoryOptions}
-                    />
+              {/* Search section */}
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-3 md:gap-5">
+                <Select
+                  options={categoryOptions}
+                  value={selectedCategory}
+                  onChange={handleCategoryChange}
+                  placeholder="Категория"
+                  className="w-full"
+                />
+                
+                <Select
+                  options={subcategoryOptions}
+                  value={selectedSubcategory}
+                  onChange={handleSubcategoryChange}
+                  placeholder="Подкатегория"
+                  className="w-full"
+                  disabled={!selectedCategory}
+                />
 
-                    {/* 
-                    <Select
-                      value={selectedSubcategory}
-                      onChange={handleSubcategoryChange}
-                      placeholder="Подкатегория"
-                      options={subcategoryOptions}
-                      disabled={!selectedCategory}
-                    />
-                    */}
+                <Select
+                  options={thirdSubcategoryOptions}
+                  value={selectedThirdSubcategory}
+                  onChange={handleThirdSubcategoryChange}
+                  placeholder="Третья подкатегория"
+                  className="w-full"
+                  disabled={!selectedSubcategory}
+                />
 
-                    {/* 
-                    <Select
-                      value={selectedThirdSubcategory}
-                      onChange={handleThirdSubcategoryChange}
-                      placeholder="Третья подкатегория"
-                      options={thirdSubcategoryOptions}
-                      disabled={!selectedSubcategory}
-                    />
-                    */}
+                <Select
+                  options={brandOptions}
+                  value={selectedBrand}
+                  onChange={handleBrandChange}
+                  placeholder="Марка"
+                  className="w-full"
+                />
 
-                    <Select
-                      value={selectedBrand}
-                      onChange={handleBrandChange}
-                      placeholder="Марка"
-                      options={brandOptions}
-                    />
+                <Select
+                  options={modelOptions}
+                  value={selectedModel}
+                  onChange={handleModelChange}
+                  placeholder="Модель"
+                  className="w-full"
+                  disabled={!selectedBrand}
+                />
 
-                    <Select
-                      value={selectedModel}
-                      onChange={handleModelChange}
-                      placeholder="Модель"
-                      options={modelOptions}
-                      disabled={!selectedBrand}
-                    />
-
-                    <Select
-                      value={selectedModification}
-                      onChange={(value) => setSelectedModification(value)}
-                      placeholder="Модификация"
-                      options={modificationOptions}
-                      disabled={!selectedModel}
-                    />
-                  </>
-                )}
+                <Select
+                  options={modificationOptions}
+                  value={selectedModification}
+                  onChange={(value) => setSelectedModification(value)}
+                  placeholder="Модификация"
+                  className="w-full"
+                  disabled={!selectedModel}
+                />
               </div>
             </div>
 
-            {/* Right column: VIN and Find buttons */}
-            <div className="flex flex-col gap-4 lg:w-[200px]">
+            {/* Mobile VIN request button */}
+            <div className="lg:hidden">
               <Button
-                label="Запрос по VIN"
+                label="Запросить по VIN"
                 variant="noArrow"
-                className="flex justify-center items-center"
+                className="flex justify-center items-center w-full border-none"
                 hideArrow
                 onClick={() => setIsVinModalOpen(true)}
-              />
-              <Button
-                label="Найти"
-                variant="primary"
-                className="flex justify-center items-center"
-                hideArrow
-                onClick={handleSearch}
-                disabled={isLoading}
               />
             </div>
           </div>

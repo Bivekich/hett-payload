@@ -406,7 +406,10 @@ export const getCatalogProducts = async (filters: CatalogFilters = {}): Promise<
       queryParams.append('where[featured][equals]', optimizedFilters.featured.toString());
     }
     if (optimizedFilters.search) {
-      queryParams.append('where[name][like]', optimizedFilters.search);
+      // Search in name, OEM, and article fields
+      queryParams.append('where[or][0][name][like]', optimizedFilters.search);
+      queryParams.append('where[or][1][oem][like]', optimizedFilters.search);
+      queryParams.append('where[or][2][article][like]', optimizedFilters.search);
     }
     
     console.log('Optimized catalog query:', queryParams.toString());

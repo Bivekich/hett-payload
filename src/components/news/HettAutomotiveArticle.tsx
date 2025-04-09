@@ -80,7 +80,7 @@ const HettAutomotiveArticle: React.FC<HettAutomotiveArticleProps> = ({
               {/* Preview Image */}
               {previewImage && (
                 <div className="mt-6 md:mt-0 md:w-1/2 lg:w-2/5">
-                  <div className="overflow-hidden rounded-md shadow-sm">
+                  <div className="overflow-hidden">
                     <Image 
                       src={previewImage.url.startsWith('/') ? `${API_URL}${previewImage.url}` : previewImage.url} 
                       alt={previewImage.alt || 'Article image'} 
