@@ -6,6 +6,7 @@ import ContactInfo from "./components/ContactInfo";
 import Map from "./components/Map";
 import ContactForm from "./components/ContactForm";
 import { getContactData } from "@/services/api";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const ContactPage = () => {
   const [pageTitle, setPageTitle] = useState("Контакты Hett Automotive");
@@ -29,7 +30,9 @@ const ContactPage = () => {
   }, []);
   
   if (loading) {
-    return <div>Loading...</div>;
+    return <div>
+      <LoadingSpinner />
+    </div>;
   }
   
   return (

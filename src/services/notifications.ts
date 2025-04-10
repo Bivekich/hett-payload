@@ -41,6 +41,57 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Add getCurrentCount function
+async function getCurrentCount(type: 'contact_form' | 'vin_request'): Promise<number> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_CMS_URL}/api/email-metrics?where[type][equals]=${type}`);
+    const data = await response.json();
+    if (data.docs && data.docs.length > 0) {
+      return data.docs[0].count || 0;
+    }
+    return 0;
+  } catch (error) {
+    console.error('Error getting current count:', error);
+    return 0;
+  }
+}
+
+// Add incrementEmailCount function
+async function incrementEmailCount(type: 'contact_form' | 'vin_request'): Promise<void> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_CMS_URL}/api/email-metrics?where[type][equals]=${type}`);
+    const data = await response.json();
+    
+    if (data.docs && data.docs.length > 0) {
+      const metric = data.docs[0];
+      await fetch(`${process.env.NEXT_PUBLIC_CMS_URL}/api/email-metrics/${metric.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          count: (metric.count || 0) + 1,
+          lastSentAt: new Date().toISOString()
+        }),
+      });
+    } else {
+      await fetch(`${process.env.NEXT_PUBLIC_CMS_URL}/api/email-metrics`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type,
+          count: 1,
+          lastSentAt: new Date().toISOString()
+        }),
+      });
+    }
+  } catch (error) {
+    console.error('Error updating email metrics:', error);
+  }
+}
+
 /**
  * Send a message to Telegram
  */
@@ -82,7 +133,7 @@ export async function sendEmail(subject: string, text: string, html: string): Pr
 /**
  * Format VIN request data for Telegram message
  */
-function formatVinRequestForTelegram(data: VinRequestData): string {
+function formatVinRequestForTelegram(data: VinRequestData, requestNumber: number): string {
   const currentDate = new Date().toLocaleDateString('ru-RU', {
     day: '2-digit',
     month: '2-digit',
@@ -92,7 +143,7 @@ function formatVinRequestForTelegram(data: VinRequestData): string {
   });
 
   return `
-🚗 <b>НОВЫЙ ЗАПРОС ПО VIN</b> 🚗
+🚗 <b>НОВЫЙ ЗАПРОС ПО VIN #${requestNumber}</b> 🚗
 📅 <i>${currentDate}</i>
 
 👤 <b>Имя:</b> ${data.name}
@@ -110,7 +161,7 @@ ${data.parts}
 /**
  * Format Contact form data for Telegram message
  */
-function formatContactFormForTelegram(data: ContactFormData): string {
+function formatContactFormForTelegram(data: ContactFormData, requestNumber: number): string {
   const currentDate = new Date().toLocaleDateString('ru-RU', {
     day: '2-digit',
     month: '2-digit',
@@ -120,7 +171,7 @@ function formatContactFormForTelegram(data: ContactFormData): string {
   });
 
   let message = `
-📝 <b>НОВОЕ СООБЩЕНИЕ С ФОРМЫ ОБРАТНОЙ СВЯЗИ</b> 📝
+📝 <b>НОВОЕ СООБЩЕНИЕ С ФОРМЫ ОБРАТНОЙ СВЯЗИ #${requestNumber}</b> 📝
 📅 <i>${currentDate}</i>
 `;
 
@@ -147,9 +198,17 @@ function formatContactFormForTelegram(data: ContactFormData): string {
 /**
  * Format VIN request data for email message
  */
-function formatVinRequestForEmail(data: VinRequestData): { text: string; html: string } {
+function formatVinRequestForEmail(data: VinRequestData, requestNumber: number): { text: string; html: string } {
+  const currentDate = new Date().toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
   const text = `
-Новый запрос по VIN
+Новый запрос по VIN #${requestNumber}
 
 Имя: ${data.name}
 Телефон: ${data.phone}
@@ -157,6 +216,8 @@ Email: ${data.email}
 VIN: ${data.vin}
 Модель: ${data.model}
 Запчасти: ${data.parts}
+
+Отправлено: ${currentDate}
 `;
 
   const html = `
@@ -165,7 +226,7 @@ VIN: ${data.vin}
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Новый запрос по VIN</title>
+  <title>Новый запрос по VIN #${requestNumber}</title>
   <style>
     body {
       font-family: 'Roboto Condensed', Arial, sans-serif;
@@ -251,14 +312,15 @@ VIN: ${data.vin}
       <div class="logo">Hett Automotive</div>
     </div>
     
-    <div class="title">Новый запрос по VIN</div>
-    <div class="date">${new Date().toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })}</div>
+    <div class="title">Новый запрос по VIN #${requestNumber}</div>
+    <div class="date">${currentDate}</div>
+    
+    <div class="highlight">
+      <div class="field">
+        <span class="field-label">Номер запроса:</span>
+        <span class="field-value">${requestNumber}</span>
+      </div>
+    </div>
     
     <div class="field">
       <span class="field-label">Имя:</span>
@@ -289,7 +351,7 @@ VIN: ${data.vin}
     
     <div class="field">
       <span class="field-label">Запчасти:</span>
-      <div class="field-value" style="white-space: pre-line;">${data.parts}</div>
+      <div class="field-value" style="white-space: pre-line">${data.parts}</div>
     </div>
     
     <div class="footer">
@@ -306,8 +368,9 @@ VIN: ${data.vin}
 /**
  * Format Contact form data for email message
  */
-function formatContactFormForEmail(data: ContactFormData): { text: string; html: string } {
-  let textContent = `Новое сообщение с формы обратной связи\n\n`;
+function formatContactFormForEmail(data: ContactFormData, requestNumber: number): { text: string; html: string } {
+  let textContent = `Новое сообщение с формы обратной связи #${requestNumber}\n\n`;
+  textContent += `Номер обращения: ${requestNumber}\n\n`;
   
   // Add all form fields to the message
   Object.entries(data).forEach(([key, value]) => {
@@ -316,6 +379,16 @@ function formatContactFormForEmail(data: ContactFormData): { text: string; html:
 
   // Start building the HTML email
   let formFieldsHtml = '';
+  
+  // Add request number first
+  formFieldsHtml += `
+  <div class="highlight">
+    <div class="field">
+      <span class="field-label">Номер обращения:</span>
+      <span class="field-value">${requestNumber}</span>
+    </div>
+  </div>`;
+  
   Object.entries(data).forEach(([key, value]) => {
     // Check if the value might be a longer message
     const isMessage = 
@@ -344,7 +417,7 @@ function formatContactFormForEmail(data: ContactFormData): { text: string; html:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Новое сообщение с формы обратной связи</title>
+  <title>Новое сообщение с формы обратной связи #${requestNumber}</title>
   <style>
     body {
       font-family: 'Roboto Condensed', Arial, sans-serif;
@@ -415,6 +488,14 @@ function formatContactFormForEmail(data: ContactFormData): { text: string; html:
       white-space: pre-line;
     }
     
+    .highlight {
+      background-color: #f8f9fa;
+      padding: 12px;
+      border-radius: 4px;
+      border-left: 3px solid #38AE34;
+      margin-bottom: 12px;
+    }
+    
     .footer {
       margin-top: 30px;
       padding-top: 20px;
@@ -431,7 +512,7 @@ function formatContactFormForEmail(data: ContactFormData): { text: string; html:
       <div class="logo">Hett Automotive</div>
     </div>
     
-    <div class="title">Новое сообщение с формы обратной связи</div>
+    <div class="title">Новое сообщение с формы обратной связи #${requestNumber}</div>
     <div class="date">${new Date().toLocaleDateString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
@@ -457,38 +538,76 @@ function formatContactFormForEmail(data: ContactFormData): { text: string; html:
  * Send VIN request to Telegram and email
  */
 export async function sendVinRequest(data: VinRequestData): Promise<{ telegram: boolean; email: boolean }> {
-  const telegramMessage = formatVinRequestForTelegram(data);
-  const telegramResult = await sendTelegramMessage(telegramMessage);
+  try {
+    // Get current count before sending
+    const currentCount = await getCurrentCount('vin_request');
+    const newCount = currentCount + 1;
 
-  const { text, html } = formatVinRequestForEmail(data);
-  const emailResult = await sendEmail(
-    `[hettautomotive.ru] Запрос по VIN от ${data.name}`,
-    text,
-    html
-  );
+    // Format messages with request number
+    const telegramMessage = formatVinRequestForTelegram(data, newCount);
+    const { text, html } = formatVinRequestForEmail(data, newCount);
 
-  return {
-    telegram: telegramResult,
-    email: emailResult,
-  };
+    // Send notifications
+    const telegramResult = await sendTelegramMessage(telegramMessage);
+    const emailResult = await sendEmail(
+      `[hettautomotive.ru] Запрос по VIN #${newCount} от ${data.name}`,
+      text,
+      html
+    );
+
+    // If either notification was sent successfully, increment the counter
+    if (telegramResult || emailResult) {
+      await incrementEmailCount('vin_request');
+    }
+
+    return {
+      telegram: telegramResult,
+      email: emailResult,
+    };
+  } catch (error) {
+    console.error('Error sending VIN request:', error);
+    return {
+      telegram: false,
+      email: false,
+    };
+  }
 }
 
 /**
  * Send Contact form submission to Telegram and email
  */
 export async function sendContactForm(data: ContactFormData): Promise<{ telegram: boolean; email: boolean }> {
-  const telegramMessage = formatContactFormForTelegram(data);
-  const telegramResult = await sendTelegramMessage(telegramMessage);
+  try {
+    // Get current count before sending
+    const currentCount = await getCurrentCount('contact_form');
+    const newCount = currentCount + 1;
 
-  const { text, html } = formatContactFormForEmail(data);
-  const emailResult = await sendEmail(
-    `[hettautomotive.ru] Сообщение с формы обратной связи от ${data.name || 'посетителя'}`,
-    text,
-    html
-  );
+    // Format messages with request number
+    const telegramMessage = formatContactFormForTelegram(data, newCount);
+    const { text, html } = formatContactFormForEmail(data, newCount);
 
-  return {
-    telegram: telegramResult,
-    email: emailResult,
-  };
+    // Send notifications
+    const telegramResult = await sendTelegramMessage(telegramMessage);
+    const emailResult = await sendEmail(
+      `[hettautomotive.ru] Сообщение с формы обратной связи #${newCount} от ${data.name || 'посетителя'}`,
+      text,
+      html
+    );
+
+    // If either notification was sent successfully, increment the counter
+    if (telegramResult || emailResult) {
+      await incrementEmailCount('contact_form');
+    }
+
+    return {
+      telegram: telegramResult,
+      email: emailResult,
+    };
+  } catch (error) {
+    console.error('Error sending contact form:', error);
+    return {
+      telegram: false,
+      email: false,
+    };
+  }
 } 

@@ -133,7 +133,7 @@ const VinRequestModal: React.FC<VinRequestModalProps> = ({ isOpen, onClose }) =>
         className="flex relative flex-col p-8 md:p-16 bg-white max-w-[480px] w-full mx-4 animate-fadeIn"
       >
         <h2 className="text-2xl md:text-3xl font-extrabold leading-none text-black roboto-condensed-bold">
-          Запрос по VIN
+          Запросить по VIN
         </h2>
         
         {/* Status message */}

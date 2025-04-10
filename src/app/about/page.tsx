@@ -10,6 +10,7 @@ import BuySection from "@/components/about/BuySection";
 import SmallBanner from "../../components/SmallBanner";
 import Map from "../contact/components/Map";
 import { API_URL } from "@/services/api";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function AboutPage() {
   const [aboutData, setAboutData] = useState<AboutData | null>(null);
@@ -62,7 +63,7 @@ export default function AboutPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-xl">Loading...</p>
+       <LoadingSpinner />
       </div>
     );
   }

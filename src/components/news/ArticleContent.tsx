@@ -186,7 +186,7 @@ const ArticleContent: React.FC<ArticleContentProps> = ({ contentSections }) => {
             {/* Optional Image */}
             {section.image && (
               <div className="mt-6 md:mt-0 md:w-1/2 lg:w-2/5">
-                <div className="overflow-hidden rounded-md shadow-sm relative aspect-[4/3]">
+                <div className="overflow-hidden shadow-sm relative aspect-[4/3]">
                   <Image 
                     src={section.image.url.startsWith('/') ? `${API_URL}${section.image.url}` : section.image.url} 
                     alt={section.image.alt || 'Article image'} 

@@ -9,7 +9,7 @@ interface ArticleImageProps {
 const ArticleImage: React.FC<ArticleImageProps> = ({ src, alt }) => {
   return (
     <div className="hidden md:block md:min-w-[380px] lg:min-w-[480px] xl:min-w-[520px] md:max-w-[480px] h-auto sticky top-4">
-      <div className="overflow-hidden rounded-md relative mt-8 aspect-video">
+      <div className="overflow-hidden relative mt-8 aspect-video">
         <Image 
           src={src} 
           alt={alt} 

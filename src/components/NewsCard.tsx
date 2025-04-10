@@ -33,7 +33,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
             height={380}
             width={380}
             alt="News article thumbnail"
-            className="object-contain rounded-sm"
+            className="object-contain rounded-none"
             
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
          
