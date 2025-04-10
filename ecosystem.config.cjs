@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'hettautomotive',
       script: 'npm',
-      args: 'run start:3002',
+      args: 'run start:3003',
       env: {
         NODE_ENV: 'production',
       },
