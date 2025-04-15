@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface DropdownItemProps {
@@ -16,7 +16,7 @@ const DropdownItem: React.FC<DropdownItemProps> = ({
 }) => {
   return (
     <li
-      className={`px-5 py-2 cursor-pointer font-['Roboto_Condensed'] text-base truncate ${
+      className={`px-5 py-2 cursor-pointer font-['Roboto_Condensed'] text-base ${
         isSelected ? "text-[#38AE34]" : "text-[#3B3B3B]"
       }`}
       onClick={onClick}
@@ -50,10 +50,34 @@ const Select = ({
 }: SelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownWidth, setDropdownWidth] = useState<number | null>(null);
+  const selectedLabelRef = useRef<HTMLSpanElement>(null);
 
   // Find selected option label
   const selectedLabel =
     options.find((opt) => opt.value === value)?.label || placeholder;
+
+  // Calculate the width required for the longest option
+  const minDropdownWidth = useMemo(() => {
+    // Find the option with the longest label
+    let longestOption = placeholder;
+    options.forEach((option) => {
+      if (option.label.length > longestOption.length) {
+        longestOption = option.label;
+      }
+    });
+    
+    // Return an estimated width (will be refined by measurement)
+    return longestOption.length * 8 + 48; // Rough estimation of character width plus padding
+  }, [options, placeholder]);
+
+  // Measure the actual width of the select container
+  useEffect(() => {
+    if (dropdownRef.current) {
+      const selectWidth = dropdownRef.current.offsetWidth;
+      setDropdownWidth(Math.max(selectWidth, minDropdownWidth));
+    }
+  }, [isOpen, minDropdownWidth]);
 
   // Handle clicking outside to close dropdown
   useEffect(() => {
@@ -89,6 +113,7 @@ const Select = ({
           disabled={disabled}
         >
           <span
+            ref={selectedLabelRef}
             className={`font-['Roboto_Condensed'] text-base truncate ${
               value ? "text-[#3B3B3B]" : "text-[#8898A4]"
             }`}
@@ -122,8 +147,13 @@ const Select = ({
               exit={{ opacity: 0, y: 0 }}
               transition={{ duration: 0.15 }}
               className="absolute z-10 left-[-1px] right-[-1px] bg-white border border-[#38AE34] shadow-sm max-h-60 overflow-auto"
+              style={{
+                minWidth: dropdownWidth ? `${dropdownWidth}px` : undefined,
+                width: 'max-content',
+                maxWidth: '95vw'
+              }}
             >
-              <ul className="py-0" role="listbox">
+              <ul className="py-0 whitespace-nowrap" role="listbox">
                 {options.map((option) => (
                   <DropdownItem
                     key={option.value}

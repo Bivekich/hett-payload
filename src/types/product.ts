@@ -36,7 +36,7 @@ export interface ProductAttributes {
   slug: string;
   article: string;
   price?: string;
-  brand: string;
+  brand: string[];
   model: string;
   modification: string;
   oem: string;

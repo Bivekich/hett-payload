@@ -73,6 +73,7 @@ export interface Brand extends BaseContent {
   slug: string;
   description?: RichTextContent; // Rich text content
   logo?: Media;
+  thirdsubcategories?: (ThirdSubcategory | string | number)[]; // Can be populated objects or just IDs
   featured: boolean;
   metaTitle?: string;
   metaDescription?: string;

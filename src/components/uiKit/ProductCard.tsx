@@ -13,7 +13,7 @@ interface ProductAttributes {
   name: string;
   article: string;
   oem: string;
-  brand: string;
+  brand: string | string[];
   model: string;
   slug: string;
   image?: {
@@ -36,7 +36,7 @@ interface ProductCardProps {
 
 interface ProductDetailsProps {
   oemNumber: string;
-  brand: string;
+  brand: string | string[];
   model: string;
 }
 
@@ -46,6 +46,9 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({
   brand,
   model,
 }) => {
+  // Format brand for display (join if array)
+  const displayBrand = Array.isArray(brand) ? brand.join(', ') : brand;
+
   return (
     <div className="flex justify-between w-full text-sm font-[Roboto_Condensed]">
       <div className="flex-1 shrink basis-0 text-[#181818]">
@@ -57,7 +60,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({
       <div className="flex-1 shrink basis-0 text-[#181818]">
         {oemNumber}
         <br />
-        {brand}
+        {displayBrand}
         <br />
         {model}
       </div>

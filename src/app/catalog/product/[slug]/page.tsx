@@ -25,6 +25,23 @@ const convertCmsProductToProduct = (cmsProduct: CmsProduct): Product => {
     }
   }
   
+  // Process brands (array)
+  let brandNames: string[] = [];
+  if (Array.isArray(cmsProduct.brand)) {
+    brandNames = cmsProduct.brand.map(b => {
+      if (typeof b === 'string') return b; // Should ideally be ID, but handle if it's just name string
+      if (typeof b === 'number') return String(b); // Handle if it's just ID number
+      return b?.name || ''; // Extract name from populated object
+    }).filter(name => name); // Filter out empty strings
+  } else if (cmsProduct.brand) { // Handle single brand case for safety/backward compatibility
+     const singleBrandName = typeof cmsProduct.brand === 'string' 
+        ? cmsProduct.brand 
+        : (typeof cmsProduct.brand === 'number' ? String(cmsProduct.brand) : cmsProduct.brand?.name);
+     if (singleBrandName) {
+         brandNames.push(singleBrandName);
+     }
+  }
+  
   return {
     id: parseInt(cmsProduct.id),
     attributes: {
@@ -32,7 +49,7 @@ const convertCmsProductToProduct = (cmsProduct: CmsProduct): Product => {
       slug: cmsProduct.slug,
       article: cmsProduct.article || '',
       price: cmsProduct.price ? cmsProduct.price.toString() : '',
-      brand: typeof cmsProduct.brand === 'string' ? cmsProduct.brand : cmsProduct.brand?.name || '',
+      brand: brandNames, // Assign the array of names
       model: typeof cmsProduct.model === 'string' ? cmsProduct.model : cmsProduct.model?.name || '',
       modification: typeof cmsProduct.modification === 'string' ? cmsProduct.modification : cmsProduct.modification?.name || '',
       oem: cmsProduct.oem || '',

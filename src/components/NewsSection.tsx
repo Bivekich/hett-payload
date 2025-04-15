@@ -7,6 +7,7 @@ import SliderButton from "./uiKit/SliderButton";
 import { getArticles } from "@/services/api";
 import { API_URL } from "@/services/api";
 import Link from "next/link";
+import Container from "./Container";
 
 interface NewsItem {
   id: number | string;
@@ -78,23 +79,23 @@ const NewsSection = () => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col justify-center items-center px-4 md:px-6 py-16 w-full bg-[#181818] relative z-[1]">
-        <div className="flex flex-col w-full max-w-[1280px]">
+      <div className="w-full bg-[#181818] py-16 relative z-[1]">
+        <Container>
           <h2 className="text-4xl font-extrabold leading-none text-white roboto-condensed-bold">
             Новости
           </h2>
           <div className="mt-10 w-full h-[300px] flex justify-center items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#38AE34]"></div>
           </div>
-        </div>
+        </Container>
       </div>
     );
   }
 
   if (error || newsList.length === 0) {
     return (
-      <div className="flex flex-col justify-center items-center px-4 md:px-6 py-16 w-full bg-[#181818] relative z-[1]">
-        <div className="flex flex-col w-full max-w-[1280px]">
+      <div className="w-full bg-[#181818] py-16 relative z-[1]">
+        <Container>
           <h2 className="text-4xl font-extrabold leading-none text-white roboto-condensed-bold">
             Новости
           </h2>
@@ -103,14 +104,14 @@ const NewsSection = () => {
               {error || "Новостей пока нет"}
             </div>
           </div>
-        </div>
+        </Container>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col justify-center items-center px-4 md:px-6 py-16 w-full bg-[#181818] relative z-[1]">
-      <div className="flex flex-col w-full max-w-[1280px]">
+    <div className="w-full bg-[#181818] py-16 relative z-[1]">
+      <Container>
         <h2 className="text-4xl font-extrabold leading-none text-white roboto-condensed-bold">
           Новости
         </h2>
@@ -167,7 +168,7 @@ const NewsSection = () => {
             className="inline-flex order-1 sm:order-2"
           />
         </div>
-      </div>
+      </Container>
     </div>
   );
 };

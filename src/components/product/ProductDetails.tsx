@@ -34,7 +34,7 @@ interface Distributor {
 const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
   const { 
     oem, 
-    brand, 
+    brand,
     model, 
     modification, 
     description: productDescription,
@@ -43,6 +43,9 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
     distributors,
     images = []
   } = product.attributes;
+
+  // Join the brand names array into a comma-separated string
+  const brandDisplayString = Array.isArray(brand) ? brand.join(', ') : (brand || 'Н/Д');
 
   // Extract the main image URL and make it absolute if needed
   let mainImageUrl = product?.attributes?.image?.data?.attributes?.url;
@@ -74,7 +77,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
 
   // Create characteristics array for the ProductCharacteristics component
   const characteristics: Characteristic[] = [
-    { label: "Марка авто", value: brand || "Н/Д" },
+    { label: "Марка авто", value: brandDisplayString },
     { label: "Модель", value: model || "Н/Д" },
     { label: "Модификация", value: modification || "Н/Д" },
   ];
@@ -118,7 +121,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
           {product.attributes.article && (
             <p className="text-gray-600 mb-1">Артикул: {product.attributes.article}</p>
           )}
-          <p className="text-gray-600 mb-1">Марка: {brand}</p>
+          <p className="text-gray-600 mb-1">Марка: {brandDisplayString}</p>
           <p className="text-gray-600 mb-1">Модель: {model}</p>
           <p className="text-gray-600 mb-1">Модификация: {modification}</p>
           {product.attributes.price && (

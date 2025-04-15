@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from 'next/navigation';
 import CategoryCard from "./CategoryCard";
 import Button from "./uiKit/Button";
 import Select from "./uiKit/Select";
 import VinRequestModal from "./uiKit/VinRequestModal";
 import { getCategories, getBrands, getModels, getModifications, getSubcategories, getThirdSubcategories, getCatalogProducts } from '../services/catalogApi';
-import { Category, Brand, Model, Modification, Subcategory, ThirdSubcategory } from '../types/catalog';
+import { Category, Brand as CmsBrand, Model as CmsModel, Modification, Subcategory as CmsSubcategory, ThirdSubcategory as CmsThirdSubcategory, Product as CmsProduct, CatalogFilters } from '../types/catalog';
 import { API_URL } from '@/services/api';
 
 // Interface for category cards display
@@ -18,569 +18,586 @@ interface CategoryCardData {
   slug: string;
 }
 
-// Add interface for filters at the top of the file after other interfaces
-interface CatalogFilters {
-  brand?: string;
-  category?: string;
-  subcategory?: string;
-  thirdsubcategory?: string;
-  model?: string;
-  modification?: string;
-  depth?: number;
-  page?: number;
-  limit?: number;
-  search?: string;
+// Helper function to convert CMS subcategory to frontend subcategory format (Copied from Catalog.tsx)
+interface SubcategoryAttributes {
+  name: string;
+  slug?: string;
 }
+interface Subcategory {
+  id: number;
+  attributes: SubcategoryAttributes;
+  category?: Category | string;
+}
+const convertCmsSubcategoryToSubcategory = (cmsSubcategory: CmsSubcategory): Subcategory => {
+  return {
+    id: parseInt(cmsSubcategory.id),
+    attributes: {
+      name: cmsSubcategory.name,
+      slug: cmsSubcategory.slug,
+    },
+    category: cmsSubcategory.category,
+  };
+};
+
+// Helper function to convert CMS third subcategory to frontend format (Copied from Catalog.tsx)
+interface ThirdSubcategoryAttributes {
+  name: string;
+  slug?: string;
+}
+interface ThirdSubcategory {
+  id: number;
+  attributes: ThirdSubcategoryAttributes;
+  subcategory?: Subcategory | string;
+}
+const convertCmsThirdSubcategoryToThirdSubcategory = (cmsThirdSubcategory: CmsThirdSubcategory): ThirdSubcategory => {
+  let subcategoryValue: string | Subcategory;
+  if (typeof cmsThirdSubcategory.subcategory === 'string') {
+    subcategoryValue = cmsThirdSubcategory.subcategory;
+  } else if (cmsThirdSubcategory.subcategory) {
+    subcategoryValue = convertCmsSubcategoryToSubcategory(cmsThirdSubcategory.subcategory);
+  } else {
+    subcategoryValue = '';
+  }
+  return {
+    id: parseInt(cmsThirdSubcategory.id),
+    attributes: {
+      name: cmsThirdSubcategory.name,
+      slug: cmsThirdSubcategory.slug,
+    },
+    subcategory: subcategoryValue,
+  };
+};
 
 const ProductSearchSection = () => {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectedBrand, setSelectedBrand] = useState<string>("");
-  const [selectedModel, setSelectedModel] = useState<string>("");
-  const [selectedModification, setSelectedModification] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
-  const [selectedThirdSubcategory, setSelectedThirdSubcategory] = useState<string>("");
   const [isVinModalOpen, setIsVinModalOpen] = useState(false);
-  
-  // State variables for filter options
-  const [categoryOptions, setCategoryOptions] = useState<{value: string, label: string}[]>([]);
-  const [subcategoryOptions, setSubcategoryOptions] = useState<{value: string, label: string}[]>([]);
-  const [thirdSubcategoryOptions, setThirdSubcategoryOptions] = useState<{value: string, label: string}[]>([]);
-  const [brandOptions, setBrandOptions] = useState<{value: string, label: string}[]>([]);
-  const [modelOptions, setModelOptions] = useState<{value: string, label: string}[]>([]);
-  const [modificationOptions, setModificationOptions] = useState<{value: string, label: string}[]>([]);
+  const [isMetadataLoading, setIsMetadataLoading] = useState<boolean>(true);
+  const [metadataLoaded, setMetadataLoaded] = useState<boolean>(false);
   
   // State for category cards
   const [categoryCards, setCategoryCards] = useState<CategoryCardData[]>([]);
   
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  // --- Refactored State ---
+  // Master Data State
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [thirdSubcategories, setThirdSubcategories] = useState<ThirdSubcategory[]>([]);
+  const [brands, setBrands] = useState<CmsBrand[]>([]);
+  const [models, setModels] = useState<CmsModel[]>([]);
+  const [modifications, setModifications] = useState<Modification[]>([]);
 
-  // Fetch filter options when component mounts
+  // Filtered Options State (for dropdowns)
+  const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
+  const [filteredSubcategories, setFilteredSubcategories] = useState<Subcategory[]>([]);
+  const [filteredThirdSubcategories, setFilteredThirdSubcategories] = useState<ThirdSubcategory[]>([]);
+  const [filteredBrands, setFilteredBrands] = useState<CmsBrand[]>([]);
+  const [filteredModels, setFilteredModels] = useState<CmsModel[]>([]);
+  const [filteredModifications, setFilteredModifications] = useState<Modification[]>([]);
+
+  // Selected Filter State
+  const [filterCategory, setFilterCategory] = useState<string | null>(null);
+  const [filterSubcategory, setFilterSubcategory] = useState<Subcategory | null>(null);
+  const [filterThirdSubcategory, setFilterThirdSubcategory] = useState<ThirdSubcategory | null>(null);
+  const [filterBrand, setFilterBrand] = useState<string | null>(null);
+  const [filterModel, setFilterModel] = useState<string | null>(null);
+  const [filterModification, setFilterModification] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // Fetched Products State (for filter logic)
+  const [cmsProducts, setCmsProducts] = useState<CmsProduct[]>([]); 
+
+  // --- Refactored Initial Metadata Fetch ---
   useEffect(() => {
-    const fetchFilterOptions = async () => {
+    const fetchMetadata = async () => {
       try {
-        setIsLoading(true);
+        setIsMetadataLoading(true);
         
-        // Fetch categories
-        const categoriesResponse = await getCategories();
+        // Fetch all metadata in parallel
+        const [
+          categoriesResponse,
+          subcategoriesResponse,
+          thirdSubcategoriesResponse,
+          brandsResponse,
+          modelsResponse,
+          modificationsResponse
+        ] = await Promise.all([
+          getCategories({ limit: 500, depth: 1 }),
+          getSubcategories({ limit: 1000, depth: 1 }),
+          getThirdSubcategories({ limit: 1000, depth: 1 }),
+          getBrands({ limit: 500, depth: 1 }),
+          getModels({ limit: 2000, depth: 1 }),
+          getModifications({ limit: 5000, depth: 1 })
+        ]);
+
+        const fetchedCategories = categoriesResponse.docs;
+        const fetchedSubcategories = subcategoriesResponse.docs.map(convertCmsSubcategoryToSubcategory);
+        const fetchedThirdSubcategories = thirdSubcategoriesResponse.docs.map(convertCmsThirdSubcategoryToThirdSubcategory);
+        const fetchedBrands = brandsResponse.docs;
+        const fetchedModels = modelsResponse.docs;
+        const fetchedModifications = modificationsResponse.docs;
         
-        // Format categories for dropdown options
-        const formattedCategories = [
-          { value: "", label: "Все товары" },
-          ...categoriesResponse.docs.map((category: Category) => ({
-            value: category.slug,
-            label: category.name
-          }))
-        ];
-        setCategoryOptions(formattedCategories);
+        // Set Master Data State
+        setCategories(fetchedCategories);
+        setSubcategories(fetchedSubcategories);
+        setThirdSubcategories(fetchedThirdSubcategories);
+        setBrands(fetchedBrands);
+        setModels(fetchedModels);
+        setModifications(fetchedModifications);
+
+        // Initialize Filtered Options State
+        setFilteredCategories(fetchedCategories);
+        setFilteredSubcategories(fetchedSubcategories);
+        setFilteredThirdSubcategories(fetchedThirdSubcategories);
+        setFilteredBrands(fetchedBrands);
+        setFilteredModels(fetchedModels);
+        setFilteredModifications(fetchedModifications);
         
         // Format categories for category cards
-        const formattedCategoryCards = categoriesResponse.docs
-          // Remove the filter for featured categories to show all categories
-          // .filter((category: Category) => category.featured)
+        const formattedCategoryCards = fetchedCategories
           .slice(0, 5) // Limit to 5 categories for the grid
           .map((category: Category) => {
-            // Handle icon/image using similar approach as Banner component
             let iconSrc = '/images/default_category_icon.svg';
-            
-            // First try to use the icon if available
-            if (category.icon && category.icon.url) {
-              iconSrc = category.icon.url;
-              
-              // Make URL absolute if it's relative
-              if (iconSrc.startsWith('/')) {
-                iconSrc = `${API_URL}${iconSrc}`;
-              }
-            } 
-            // Fallback to the category image if icon is not available
-            else if (category.image && category.image.url) {
-              iconSrc = category.image.url;
-              
-              // Make URL absolute if it's relative
-              if (iconSrc.startsWith('/')) {
-                iconSrc = `${API_URL}${iconSrc}`;
-              }
+            const imageObj = category.icon || category.image;
+            if (typeof imageObj === 'object' && imageObj !== null && imageObj.url) {
+               iconSrc = imageObj.url.startsWith('/') ? `${API_URL}${imageObj.url}` : imageObj.url;
             }
-
             return {
-              id: category.id,
+              id: category.id.toString(),
               title: category.name,
               iconSrc,
               slug: category.slug
             };
           });
-        
         setCategoryCards(formattedCategoryCards);
         
-        // Fetch brands
-        const brandsResponse = await getBrands();
-        const formattedBrands = [
-          { value: "", label: "Все марки" },
-          ...brandsResponse.docs.map((brand: Brand) => ({
-            value: brand.slug,
-            label: brand.name
-          }))
-        ];
-        setBrandOptions(formattedBrands);
-        
-        // Fetch models
-        const modelsResponse = await getModels();
-        const formattedModels = [
-          { value: "", label: "Все модели" },
-          ...modelsResponse.docs.map((model: Model) => ({
-            value: model.slug,
-            label: model.name
-          }))
-        ];
-        setModelOptions(formattedModels);
-        
-        // Fetch modifications
-        const modificationsResponse = await getModifications();
-        const formattedModifications = [
-          { value: "", label: "Все модификации" },
-          ...modificationsResponse.docs.map((modification: Modification) => ({
-            value: modification.slug,
-            label: modification.name
-          }))
-        ];
-        setModificationOptions(formattedModifications);
-        
-        // Fetch subcategories
-        const subcategoriesResponse = await getSubcategories();
-        const formattedSubcategories = [
-          { value: "", label: "Все подкатегории" },
-          ...subcategoriesResponse.docs.map((subcategory: Subcategory) => ({
-            value: subcategory.slug,
-            label: subcategory.name
-          }))
-        ];
-        setSubcategoryOptions(formattedSubcategories);
-        
-        // Fetch third subcategories
-        const thirdSubcategoriesResponse = await getThirdSubcategories();
-        const formattedThirdSubcategories = [
-          { value: "", label: "Все третьи подкатегории" },
-          ...thirdSubcategoriesResponse.docs.map((thirdSubcategory: ThirdSubcategory) => ({
-            value: thirdSubcategory.slug,
-            label: thirdSubcategory.name
-          }))
-        ];
-        setThirdSubcategoryOptions(formattedThirdSubcategories);
-        
-        setIsLoading(false);
+        setMetadataLoaded(true);
       } catch (err) {
-        console.error('Error fetching filter options:', err);
-        setIsLoading(false);
+        console.error('Error fetching metadata:', err);
+      } finally {
+        setIsMetadataLoading(false);
       }
     };
     
-    fetchFilterOptions();
+    fetchMetadata();
   }, []);
+  // --- End Refactored Initial Metadata Fetch ---
 
-  // Fetch models filtered by selected brand and current filters
-  useEffect(() => {
-    const fetchModelsByBrand = async () => {
-      if (!selectedBrand) {
-        setModelOptions([{ value: "", label: "Все модели" }]);
-        setSelectedModel('');
+  // --- Add fetchProducts Function (Copied & Adapted from Catalog.tsx) ---
+  const fetchProducts = useCallback(async (page = 1) => { // Added page argument
+    if (!metadataLoaded) {
+        console.log("(ProductSearchSection) Skipping fetchProducts: metadata not loaded.");
         return;
       }
       
       try {
-        // Build filters for product query
-        const filters: CatalogFilters = {
-          brand: selectedBrand
-        };
-        if (selectedCategory) filters.category = selectedCategory;
-        if (selectedSubcategory) filters.subcategory = selectedSubcategory;
-        if (selectedThirdSubcategory) filters.thirdsubcategory = selectedThirdSubcategory;
+      setIsMetadataLoading(true); // Use isMetadataLoading for loading indication
+      // console.log("(ProductSearchSection) Fetching products with filters:", { /* filters */ });
 
-        // Fetch products with current filters to get available models
-        const productsResponse = await getCatalogProducts({
-          ...filters,
-          depth: 1
-        });
+      const currentFilters: CatalogFilters = {
+        page: page, // Use function argument for page
+        limit: 4, // Limit results on homepage search section (adjust as needed)
+        depth: 1, // Crucial: Ensure depth 1 to populate relations
+      };
 
-        // Create a Set of model slugs that have products
-        const modelsWithProducts = new Set(
-          productsResponse.docs
-            .map(product => typeof product.model === 'object' ? product.model?.slug : null)
-            .filter(Boolean)
-        );
+      // Add filters from state
+      if (filterCategory) currentFilters.category = filterCategory;
+      if (filterSubcategory) currentFilters.subcategory = filterSubcategory.attributes.slug || '';
+      if (filterThirdSubcategory) currentFilters.thirdsubcategory = filterThirdSubcategory.attributes.slug || '';
+      if (filterBrand) currentFilters.brand = filterBrand;
+      if (filterModel) currentFilters.model = filterModel;
+      if (filterModification) currentFilters.modification = filterModification;
+      if (searchQuery.trim()) currentFilters.search = searchQuery.trim(); // Include text search
 
-        // Fetch models for the selected brand
-        const modelsResponse = await getModels({
-          brand: selectedBrand
-        });
-        
-        // Filter models to only include those with products
-        const formattedModels = [
-          { value: "", label: "Все модели" },
-          ...modelsResponse.docs
-            .filter(model => modelsWithProducts.has(model.slug))
-            .map((model: Model) => ({
-              value: model.slug,
-              label: model.name
-            }))
-        ];
-        
-        setModelOptions(formattedModels);
-        
-        // Reset selected model if it's not in the filtered options
-        if (selectedModel && !formattedModels.some(option => option.value === selectedModel)) {
-          setSelectedModel('');
-          setSelectedModification(''); // Reset modification since model is reset
-        }
+      // console.log("(ProductSearchSection) API filters:", currentFilters);
+
+      const response = await getCatalogProducts(currentFilters);
+      const fetchedCmsProducts = response.docs;
+
+      // console.log(`(ProductSearchSection) Fetched ${fetchedCmsProducts.length} products`);
+
+      // Update state only if it's the first page fetch triggered by a filter change
+      // Or handle pagination differently if needed here (e.g., append results?)
+      // For simplicity, let's just overwrite with the first page results for now
+      setCmsProducts(fetchedCmsProducts);
+
       } catch (err) {
-        console.error('Error fetching models by brand:', err);
-        setModelOptions([{ value: "", label: "Все модели" }]);
-      }
-    };
-    
-    // Only run if initial loading is done
-    if (!isLoading) {
-      fetchModelsByBrand();
+      console.error('(ProductSearchSection) Error fetching products:', err);
+      // setError('Ошибка загрузки предложений'); // No need to set unused error state
+      // Optionally clear products on error or keep stale data?
+      setCmsProducts([]);
+    } finally {
+      setIsMetadataLoading(false); // Set metadata loading false
     }
-  }, [selectedBrand, selectedCategory, selectedSubcategory, selectedThirdSubcategory, isLoading, selectedModel]);
+  }, [
+    // Dependencies for fetchProducts
+    metadataLoaded,
+    filterCategory, filterSubcategory, filterThirdSubcategory, 
+    filterBrand, filterModel, filterModification, 
+    searchQuery // Include searchQuery
+    // currentPage is passed as an argument, so not needed here directly
+  ]);
+  // --- End fetchProducts Function ---
 
-  // Fetch modifications filtered by selected model and brand
+  // --- Centralized useEffect to update filter options (Copied from Catalog.tsx) ---
   useEffect(() => {
-    const fetchModificationsByModel = async () => {
-      if (!selectedModel || !selectedBrand) {
-        setModificationOptions([{ value: "", label: "Все модификации" }]);
-        setSelectedModification('');
-        return;
-      }
-      
-      try {
-        // Build filters for product query
-        const filters: CatalogFilters = {
-          brand: selectedBrand,
-          model: selectedModel
-        };
-        if (selectedCategory) filters.category = selectedCategory;
-        if (selectedSubcategory) filters.subcategory = selectedSubcategory;
-        if (selectedThirdSubcategory) filters.thirdsubcategory = selectedThirdSubcategory;
+    if (!metadataLoaded) return;
 
-        // Fetch products with current filters to get available modifications
-        const productsResponse = await getCatalogProducts({
-          ...filters,
-          depth: 1
-        });
+    // 1. Filter based on available products (if any)
+    const categoryIdsFromProducts = new Set<string>();
+    const subcategoryIdsFromProducts = new Set<string>();
+    const thirdSubcategoryIdsFromProducts = new Set<string>();
+    const brandIdsFromProducts = new Set<string>();
+    const modelIdsFromProducts = new Set<string>();
+    const modificationIdsFromProducts = new Set<string>();
 
-        // Create a Set of modification slugs that have products
-        const modificationsWithProducts = new Set(
-          productsResponse.docs
-            .map(product => typeof product.modification === 'object' ? product.modification?.slug : null)
-            .filter(Boolean)
-        );
+    // Note: In ProductSearchSection, cmsProducts might not be actively fetched 
+    // unless we implement immediate fetching or after a search click.
+    // For now, this logic might primarily rely on the master lists until products are fetched.
+    if (cmsProducts.length > 0) {
+      cmsProducts.forEach(product => {
+        const categoryId = typeof product.category === 'object' ? product.category?.id?.toString() : typeof product.category === 'string' ? product.category : undefined;
+        const subcategoryId = typeof product.subcategory === 'object' ? product.subcategory?.id?.toString() : typeof product.subcategory === 'string' ? product.subcategory : undefined;
+        const thirdSubcategoryId = typeof product.thirdsubcategory === 'object' ? product.thirdsubcategory?.id?.toString() : typeof product.thirdsubcategory === 'string' ? product.thirdsubcategory : undefined;
 
-        // Fetch modifications for the selected model
-        const modificationsResponse = await getModifications({
-          model: selectedModel
-        });
-        
-        // Filter modifications to only include those with products
-        const formattedModifications = [
-          { value: "", label: "Все модификации" },
-          ...modificationsResponse.docs
-            .filter(modification => modificationsWithProducts.has(modification.slug))
-            .map((modification: Modification) => ({
-              value: modification.slug,
-              label: modification.name
-            }))
-        ];
-        
-        setModificationOptions(formattedModifications);
-        
-        // Reset selected modification if it's not in the filtered options
-        if (selectedModification && !formattedModifications.some(option => option.value === selectedModification)) {
-          setSelectedModification('');
+        // Correctly handle the brand array
+        if (Array.isArray(product.brand)) {
+          product.brand.forEach(brandRef => {
+            const brandId = typeof brandRef === 'object' && brandRef !== null ? brandRef.id?.toString() : typeof brandRef === 'string' || typeof brandRef === 'number' ? String(brandRef) : undefined;
+            if (brandId) brandIdsFromProducts.add(brandId);
+          });
+        } else if (product.brand) { // Handle potential single object/ID case
+           const brandId = typeof product.brand === 'object' && product.brand !== null ? product.brand.id?.toString() : typeof product.brand === 'string' || typeof product.brand === 'number' ? String(product.brand) : undefined;
+           if (brandId) brandIdsFromProducts.add(brandId);
         }
-      } catch (err) {
-        console.error('Error fetching modifications by model:', err);
-        setModificationOptions([{ value: "", label: "Все модификации" }]);
-      }
-    };
-    
-    // Only run if initial loading is done
-    if (!isLoading) {
-      fetchModificationsByModel();
-    }
-  }, [selectedModel, selectedBrand, selectedCategory, selectedSubcategory, selectedThirdSubcategory, isLoading, selectedModification]);
+        
+        const modelId = typeof product.model === 'object' ? product.model?.id?.toString() : typeof product.model === 'string' ? product.model : undefined;
+        const modificationId = typeof product.modification === 'object' ? product.modification?.id?.toString() : typeof product.modification === 'string' ? product.modification : undefined;
 
-  // Fetch subcategories filtered by selected category
+        if (categoryId) categoryIdsFromProducts.add(categoryId);
+        if (subcategoryId) subcategoryIdsFromProducts.add(subcategoryId);
+        if (thirdSubcategoryId) thirdSubcategoryIdsFromProducts.add(thirdSubcategoryId);
+        if (modelId) modelIdsFromProducts.add(modelId);
+        if (modificationId) modificationIdsFromProducts.add(modificationId);
+      });
+    }
+
+    // 2. Determine the final filtered lists based on selections and product data
+
+    // Categories: Filter based on selected brand (if products available)
+    let finalFilteredCategories = categories;
+    if (filterBrand) {
+      // Only filter categories by products if products related to the brand exist
+      if (cmsProducts.length > 0) {
+         finalFilteredCategories = categories.filter(cat => categoryIdsFromProducts.has(cat.id.toString()));
+      } else {
+        // If brand is selected but no products fetched yet, *don't* filter categories strictly.
+        // Keep all categories available until products are fetched or search is triggered.
+        // Or, fetch products associated *only* with the brand to determine categories? - simpler to keep all for now.
+         // finalFilteredCategories = []; // Avoid strict filtering here for usability
+      }
+    }
+    setFilteredCategories(finalFilteredCategories);
+
+    // Subcategories: Filter by selected category AND brand products (if applicable)
+    let finalFilteredSubcategories = subcategories;
+    if (filterCategory) {
+       finalFilteredSubcategories = finalFilteredSubcategories.filter(sub => 
+         typeof sub.category === 'object' && sub.category?.slug === filterCategory
+       );
+    }
+    // Further filter by brand/products if a brand is selected
+    if (filterBrand) {
+       if (cmsProducts.length > 0) {
+          finalFilteredSubcategories = finalFilteredSubcategories.filter(sub => 
+             subcategoryIdsFromProducts.has(sub.id.toString())
+          );
+       } else {
+          // Avoid strict filtering if no products fetched yet
+          // finalFilteredSubcategories = [];
+       }
+    }
+    setFilteredSubcategories(finalFilteredSubcategories);
+
+    // ThirdSubcategories: Filter by selected subcategory AND brand products (if applicable)
+    let finalFilteredThirdSubcategories = thirdSubcategories;
+    if (filterSubcategory) {
+      finalFilteredThirdSubcategories = finalFilteredThirdSubcategories.filter(third => 
+         typeof third.subcategory === 'object' && third.subcategory?.id === filterSubcategory.id
+       );
+    }
+    if (filterBrand) { // Also filter by brand products
+       if (cmsProducts.length > 0) {
+          finalFilteredThirdSubcategories = finalFilteredThirdSubcategories.filter(third => 
+             thirdSubcategoryIdsFromProducts.has(third.id.toString())
+          );
+       } else {
+          // Avoid strict filtering
+          // finalFilteredThirdSubcategories = [];
+       }
+     }
+    setFilteredThirdSubcategories(finalFilteredThirdSubcategories);
+
+    // Brands: Filter by selected taxonomy products OR show all if no taxonomy selected
+    let finalFilteredBrands = brands;
+    if (filterCategory || filterSubcategory || filterThirdSubcategory) {
+       if (cmsProducts.length > 0) {
+          finalFilteredBrands = brands.filter(brand => brandIdsFromProducts.has(brand.id.toString()));
+       } else {
+          // If taxonomy selected but no products fetched, keep all brands available for now.
+          // We could fetch products matching the taxonomy to filter brands, but let's keep it simple.
+          // finalFilteredBrands = [];
+       }
+    }
+    setFilteredBrands(finalFilteredBrands);
+
+    // Models: Filter first by selected brand, then by available products
+    let finalFilteredModels = models;
+    if (filterBrand) {
+      finalFilteredModels = finalFilteredModels.filter(model => 
+        // Ensure model.brand is populated (needs depth >= 1 in models fetch)
+        typeof model.brand === 'object' && model.brand?.slug === filterBrand
+      );
+      // Refine by products if available
+      if (cmsProducts.length > 0) {
+         const modelsInProducts = finalFilteredModels.filter(model => 
+            modelIdsFromProducts.has(model.id.toString())
+         );
+         if (modelsInProducts.length > 0) {
+            finalFilteredModels = modelsInProducts;
+         } else {
+            // Keep brand-filtered list if product filtering yields nothing
+             console.log("(ProductSearchSection) No models found in current products for selected brand, showing all models for the brand.");
+         }
+      } else {
+          // If only brand selected, but no products fetched yet, show all models for that brand.
+          // Strict filtering only if other filters *are* active but yield no products (which won't happen until fetch)
+          // if (filterCategory || filterSubcategory || filterThirdSubcategory || filterModel || filterModification || searchQuery) {
+          //    finalFilteredModels = []; 
+          // }        
+      }
+    } else {
+        // If no brand selected, show all models initially
+        finalFilteredModels = models;
+    }
+    setFilteredModels(finalFilteredModels);
+
+    // Modifications: Filter first by selected model, then by available products
+    let finalFilteredModifications = modifications;
+    if (filterModel) {
+       finalFilteredModifications = finalFilteredModifications.filter(mod => 
+         // Ensure mod.model is populated (needs depth >= 1 in modifications fetch)
+         typeof mod.model === 'object' && mod.model?.slug === filterModel
+       );
+       // Refine by products if available
+       if (cmsProducts.length > 0) {
+          const modificationsInProducts = finalFilteredModifications.filter(mod => 
+             modificationIdsFromProducts.has(mod.id.toString())
+          );
+          if (modificationsInProducts.length > 0) {
+             finalFilteredModifications = modificationsInProducts;
+          } else {
+             console.log("(ProductSearchSection) No modifications found in current products for selected model, showing all modifications for the model.");
+          }
+       } else {
+           // If only model selected, but no products fetched yet, show all mods for that model.
+          // Strict filtering would apply later if other filters + model yield no products after fetch.
+          // if (filterCategory || filterSubcategory || filterThirdSubcategory || filterBrand || filterModification || searchQuery) {
+          //    finalFilteredModifications = [];
+          // }
+       }
+    } else {
+        // If no model selected, show all modifications initially
+        finalFilteredModifications = modifications;
+    }
+    setFilteredModifications(finalFilteredModifications);
+
+    // console.log("(ProductSearchSection) Updated Filter Options Based on Selection/Products:", {
+    //    categories: finalFilteredCategories.length,
+    //    subcategories: finalFilteredSubcategories.length,
+    //    thirdSubcategories: finalFilteredThirdSubcategories.length,
+    //    brands: finalFilteredBrands.length,
+    //    models: finalFilteredModels.length,
+    //    modifications: finalFilteredModifications.length
+    // });
+
+  }, [
+      // Dependencies: Master lists, selected filters, and fetched products
+      categories, subcategories, thirdSubcategories, brands, models, modifications, // Master Lists
+      filterCategory, filterSubcategory, filterThirdSubcategory, filterBrand, filterModel, // Selected Filters
+      cmsProducts, // Fetched Products
+      metadataLoaded
+  ]);
+  // --- End Centralized useEffect ---
+
+  // --- Add useEffect to Fetch Products on Filter Change ---
   useEffect(() => {
-    const fetchSubcategoriesByCategory = async () => {
-      if (!selectedCategory) {
-        setSubcategoryOptions([{ value: "", label: "Все подкатегории" }]);
-        setSelectedSubcategory('');
-        return;
-      }
-      
-      try {
-        // Fetch subcategories for the selected category
-        const subcategoriesResponse = await getSubcategories({
-          category: selectedCategory
-        });
-        
-        // Fetch products to check which subcategories have products
-        const productsResponse = await getCatalogProducts({
-          category: selectedCategory,
-          depth: 1
-        });
-        
-        // Create a Set of subcategory slugs that have products
-        const subcategoriesWithProducts = new Set(
-          productsResponse.docs
-            .map(product => typeof product.subcategory === 'object' ? product.subcategory?.slug : null)
-            .filter(Boolean)
-        );
-        
-        // Filter subcategories to only include those with products
-        const formattedSubcategories = [
-          { value: "", label: "Все подкатегории" },
-          ...subcategoriesResponse.docs
-            .filter(subcategory => subcategoriesWithProducts.has(subcategory.slug))
-            .map((subcategory: Subcategory) => ({
-              value: subcategory.slug,
-              label: subcategory.name
-            }))
-        ];
-        
-        setSubcategoryOptions(formattedSubcategories);
-        
-        // Reset selected subcategory if it's not in the filtered options
-        if (selectedSubcategory && !formattedSubcategories.some(option => option.value === selectedSubcategory)) {
-          setSelectedSubcategory('');
-        }
-      } catch (err) {
-        console.error('Error fetching subcategories by category:', err);
-        setSubcategoryOptions([{ value: "", label: "Все подкатегории" }]);
-      }
-    };
-    
-    // Only run if initial loading is done
-    if (!isLoading) {
-      fetchSubcategoriesByCategory();
+    // Fetch products whenever filters change, but only after metadata is loaded
+    if (metadataLoaded) {
+      fetchProducts(1); // Fetch first page when filters change
     }
-  }, [selectedCategory, isLoading, selectedSubcategory]);
-  
-  // Fetch third subcategories filtered by selected subcategory
-  useEffect(() => {
-    const fetchThirdSubcategoriesBySubcategory = async () => {
-      if (!selectedSubcategory) {
-        setThirdSubcategoryOptions([{ value: "", label: "Все третьи подкатегории" }]);
-        setSelectedThirdSubcategory('');
-        return;
-      }
-      
-      try {
-        // Fetch third subcategories for the selected subcategory
-        const thirdSubcategoriesResponse = await getThirdSubcategories({
-          subcategory: selectedSubcategory
-        });
-        
-        // Fetch products to check which third subcategories have products
-        const productsResponse = await getCatalogProducts({
-          subcategory: selectedSubcategory,
-          depth: 1
-        });
-        
-        // Create a Set of third subcategory slugs that have products
-        const thirdSubcategoriesWithProducts = new Set(
-          productsResponse.docs
-            .map(product => typeof product.thirdsubcategory === 'object' ? product.thirdsubcategory?.slug : null)
-            .filter(Boolean)
-        );
-        
-        // Filter third subcategories to only include those with products
-        const formattedThirdSubcategories = [
-          { value: "", label: "Все третьи подкатегории" },
-          ...thirdSubcategoriesResponse.docs
-            .filter(thirdSubcategory => thirdSubcategoriesWithProducts.has(thirdSubcategory.slug))
-            .map((thirdSubcategory: ThirdSubcategory) => ({
-              value: thirdSubcategory.slug,
-              label: thirdSubcategory.name
-            }))
-        ];
-        
-        setThirdSubcategoryOptions(formattedThirdSubcategories);
-        
-        // Reset selected third subcategory if it's not in the filtered options
-        if (selectedThirdSubcategory && !formattedThirdSubcategories.some(option => option.value === selectedThirdSubcategory)) {
-          setSelectedThirdSubcategory('');
-        }
-      } catch (err) {
-        console.error('Error fetching third subcategories by subcategory:', err);
-        setThirdSubcategoryOptions([{ value: "", label: "Все третьи подкатегории" }]);
-      }
-    };
-    
-    // Only run if initial loading is done
-    if (!isLoading) {
-      fetchThirdSubcategoriesBySubcategory();
-    }
-  }, [selectedSubcategory, isLoading, selectedThirdSubcategory]);
+  }, [
+    metadataLoaded, 
+    filterCategory, 
+    filterSubcategory, 
+    filterThirdSubcategory, 
+    filterBrand, 
+    filterModel, 
+    filterModification, 
+    searchQuery, // Include searchQuery as filter
+    fetchProducts // Include fetchProducts as dependency
+  ]);
+  // --- End Fetch Products useEffect ---
 
-  // Add new useEffect for brand filtering based on category/subcategory/third subcategory
-  useEffect(() => {
-    const fetchBrandsByFilters = async () => {
-      try {
-        // If no filters are selected, show all brands
-        if (!selectedCategory && !selectedSubcategory && !selectedThirdSubcategory) {
-          const brandsResponse = await getBrands();
-          const formattedBrands = [
-            { value: "", label: "Все марки" },
-            ...brandsResponse.docs.map((brand: Brand) => ({
-              value: brand.slug,
-              label: brand.name
-            }))
-          ];
-          setBrandOptions(formattedBrands);
-          return;
-        }
-
-        // Build filters for product query
-        const filters: CatalogFilters = {};
-        if (selectedCategory) filters.category = selectedCategory;
-        if (selectedSubcategory) filters.subcategory = selectedSubcategory;
-        if (selectedThirdSubcategory) filters.thirdsubcategory = selectedThirdSubcategory;
-
-        // Fetch products with current filters to get available brands
-        const productsResponse = await getCatalogProducts({
-          ...filters,
-          depth: 1
-        });
-
-        // Create a Set of brand slugs that have products
-        const brandsWithProducts = new Set(
-          productsResponse.docs
-            .map(product => typeof product.brand === 'object' ? product.brand?.slug : null)
-            .filter(Boolean)
-        );
-
-        // Fetch all brands to filter them
-        const brandsResponse = await getBrands();
-        
-        // Filter brands to only include those with products
-        const formattedBrands = [
-          { value: "", label: "Все марки" },
-          ...brandsResponse.docs
-            .filter(brand => brandsWithProducts.has(brand.slug))
-            .map((brand: Brand) => ({
-              value: brand.slug,
-              label: brand.name
-            }))
-        ];
-
-        setBrandOptions(formattedBrands);
-
-        // Reset selected brand if it's not in the filtered options
-        if (selectedBrand && !formattedBrands.some(option => option.value === selectedBrand)) {
-          setSelectedBrand('');
-          setSelectedModel(''); // Reset model since brand is reset
-          setSelectedModification(''); // Reset modification since brand is reset
-        }
-      } catch (err) {
-        console.error('Error fetching brands by filters:', err);
-        setBrandOptions([{ value: "", label: "Все марки" }]);
-      }
-    };
-
-    // Only run if initial loading is done
-    if (!isLoading) {
-      fetchBrandsByFilters();
-    }
-  }, [selectedCategory, selectedSubcategory, selectedThirdSubcategory, isLoading, selectedBrand]);
-
-  // Handlers for filter changes
-  const handleBrandChange = (value: string) => {
-    setSelectedBrand(value);
-    setSelectedModel(""); // Reset model when brand changes
-    setSelectedModification(""); // Reset modification when brand changes
-  };
-
-  const handleModelChange = (value: string) => {
-    setSelectedModel(value);
-    setSelectedModification(""); // Reset modification when model changes
-  };
-
+  // --- Update Handlers ---
   const handleCategoryChange = (value: string) => {
-    setSelectedCategory(value);
-    setSelectedSubcategory(''); // Reset subcategory when category changes
-    setSelectedThirdSubcategory(''); // Reset third subcategory when category changes
+    const newCategorySlug = value || null;
+    setFilterCategory(newCategorySlug);
+    setFilterSubcategory(null);
+    setFilterThirdSubcategory(null);
   };
-  
+
   const handleSubcategoryChange = (value: string) => {
-    setSelectedSubcategory(value);
-    setSelectedThirdSubcategory(''); // Reset third subcategory when subcategory changes
+    let newSubcategory: Subcategory | null = null;
+    if (value) {
+      newSubcategory = subcategories.find((s) => s.id.toString() === value) || null;
+    }
+    setFilterSubcategory(newSubcategory);
+    setFilterThirdSubcategory(null);
   };
   
   const handleThirdSubcategoryChange = (value: string) => {
-    setSelectedThirdSubcategory(value);
+    let newThirdSub: ThirdSubcategory | null = null;
+    if (value) {
+      newThirdSub = thirdSubcategories.find((t) => t.id.toString() === value) || null;
+    }
+    setFilterThirdSubcategory(newThirdSub);
+  };
+  
+  const handleBrandChange = (value: string) => {
+    const newBrandSlug = value || null;
+    setFilterBrand(newBrandSlug);
+    setFilterModel(null);
+    setFilterModification(null);
   };
 
-  // Function to handle search and redirect to catalog page with filters
+  const handleModelChange = (value: string) => {
+    const newModelSlug = value || null;
+    setFilterModel(newModelSlug);
+    setFilterModification(null);
+  };
+  
+  const handleModificationChange = (value: string) => {
+    const newModificationSlug = value || null;
+    setFilterModification(newModificationSlug);
+  };
+
+  // Reset filters handler
+  const handleResetFilters = () => {
+    setFilterCategory(null);
+    setFilterSubcategory(null);
+    setFilterThirdSubcategory(null);
+    setFilterBrand(null);
+    setFilterModel(null);
+    setFilterModification(null);
+    setSearchQuery("");
+  };
+  // --- End Update Handlers ---
+  
+  // --- Search Initiation (Button click still navigates) ---
   const handleSearch = () => {
-    // Build search params
-    const searchParams = new URLSearchParams();
+    // Build query string from current filters
+    const queryParams = new URLSearchParams();
+    if (searchQuery.trim()) queryParams.set('search', searchQuery.trim());
+    if (filterCategory) queryParams.set('category', filterCategory);
+    if (filterSubcategory) queryParams.set('subcategory', filterSubcategory.attributes.slug || filterSubcategory.id.toString());
+    if (filterThirdSubcategory) queryParams.set('thirdsubcategory', filterThirdSubcategory.attributes.slug || filterThirdSubcategory.id.toString());
+    if (filterBrand) queryParams.set('brand', filterBrand);
+    if (filterModel) queryParams.set('model', filterModel);
+    if (filterModification) queryParams.set('modification', filterModification);
     
-    // Always include search query if present, as it can search across name, OEM, and article
-    if (searchQuery) {
-      searchParams.set('search', searchQuery.trim());
-    }
-    
-    if (selectedBrand) {
-      searchParams.set('brand', selectedBrand);
-    }
-    
-    if (selectedModel) {
-      searchParams.set('model', selectedModel);
-    }
-    
-    if (selectedModification) {
-      searchParams.set('modification', selectedModification);
-    }
-    
-    // Use category and subcategory for navigation path or query parameter
-    if (selectedCategory && !selectedSubcategory && !selectedThirdSubcategory) {
-      // If only category is selected, navigate to the category page
-      const queryString = searchParams.toString() ? `?${searchParams.toString()}` : '';
-      router.push(`/catalog/${selectedCategory}${queryString}`);
-    } else {
-      // Otherwise use as query parameters
-      if (selectedCategory) {
-        searchParams.set('category', selectedCategory);
-      }
-      
-      if (selectedSubcategory) {
-        searchParams.set('subcategory', selectedSubcategory);
-      }
-      
-      if (selectedThirdSubcategory) {
-        searchParams.set('thirdsubcategory', selectedThirdSubcategory);
-      }
-      
-      const queryString = searchParams.toString() ? `?${searchParams.toString()}` : '';
-      router.push(`/catalog${queryString}`);
-    }
+    const queryString = queryParams.toString();
+    router.push(`/catalog${queryString ? '?' + queryString : ''}`);
   };
 
-  // Handle keyboard events in the search input (for Enter key)
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSearch();
+      handleSearch(); // Navigate on Enter
     }
   };
+  // --- End Search Initiation ---
 
-  // Handle category card click
   const handleCategoryClick = (categorySlug: string) => {
-    // Navigate directly to the category page using the path structure
     router.push(`/catalog/${categorySlug}`);
   };
+  
+  const openVinModal = () => setIsVinModalOpen(true);
+  const closeVinModal = () => setIsVinModalOpen(false);
+  
+  // --- Updated Option Generation ---
+  const categoryOptions = [
+    { value: "", label: "Все категории" },
+    ...filteredCategories.map((cat) => ({
+      value: cat.slug,
+      label: cat.name,
+    }))
+  ];
+  
+  const subcategoryOptions = [
+    { value: "", label: "Все подкатегории" },
+    ...filteredSubcategories
+      // Filter further based on the *currently selected* category in the form
+      // This ensures dropdown only shows relevant items even if filtered list is broader
+      .filter(sub => {
+        if (!filterCategory) return true; // Show all filtered if no category selected
+        return typeof sub.category === 'object' && sub.category?.slug === filterCategory;
+      })
+      .map((sub) => ({
+        value: sub.id.toString(), // Use ID for value as it's unique
+        label: sub.attributes.name,
+      }))
+  ];
+
+  const thirdSubcategoryOptions = [
+    { value: "", label: "Все третьи подкатегории" },
+    ...filteredThirdSubcategories
+      .filter(third => {
+        if (!filterSubcategory) return true; // Show all filtered if no subcategory selected
+        return typeof third.subcategory === 'object' && third.subcategory?.id === filterSubcategory.id;
+      })
+      .map((third) => ({
+        value: third.id.toString(), // Use ID for value
+        label: third.attributes.name,
+      }))
+  ];
+
+  const brandOptions = [
+    { value: "", label: "Все марки" },
+    ...filteredBrands.map((brand) => ({
+      value: brand.slug,
+      label: brand.name,
+    }))
+  ];
+
+  const modelOptions = [
+    { value: "", label: "Все модели" },
+    ...filteredModels
+       // No need for further filtering here as the centralized useEffect already handles brand dependency
+      .map((model) => ({
+        value: model.slug,
+        label: model.name,
+      }))
+  ];
+
+  const modificationOptions = [
+    { value: "", label: "Все модификации" },
+    ...filteredModifications
+      // No need for further filtering here as the centralized useEffect already handles model dependency
+      .map((mod) => ({
+        value: mod.slug,
+        label: mod.name,
+      }))
+  ];
+  // --- End Updated Option Generation ---
 
   return (
     <section className="py-8 bg-[#F5F5F5] pb-10">
@@ -640,63 +657,64 @@ const ProductSearchSection = () => {
                     variant="noArrow"
                     className="flex justify-center items-center w-full border-none"
                     hideArrow
-                    onClick={() => setIsVinModalOpen(true)}
+                    onClick={openVinModal}
                   />
                 </div>
               </div>
 
               {/* Search section */}
-              <div className="grid grid-cols-1 md:grid-cols-6 gap-3 md:gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-4">
                 <Select
                   options={categoryOptions}
-                  value={selectedCategory}
+                    value={filterCategory || ""} 
                   onChange={handleCategoryChange}
                   placeholder="Категория"
-                  className="w-full"
+                    className="lg:col-span-1"
                 />
-                
                 <Select
                   options={subcategoryOptions}
-                  value={selectedSubcategory}
+                    value={filterSubcategory ? filterSubcategory.id.toString() : ""} 
                   onChange={handleSubcategoryChange}
                   placeholder="Подкатегория"
-                  className="w-full"
-                  disabled={!selectedCategory}
+                    className="lg:col-span-1" 
+                    disabled={!filterCategory || subcategoryOptions.length <= 1} // Disable if no category or no options
                 />
-
                 <Select
                   options={thirdSubcategoryOptions}
-                  value={selectedThirdSubcategory}
+                    value={filterThirdSubcategory ? filterThirdSubcategory.id.toString() : ""} 
                   onChange={handleThirdSubcategoryChange}
-                  placeholder="Третья подкатегория"
-                  className="w-full"
-                  disabled={!selectedSubcategory}
+                    placeholder="Раздел" 
+                    className="lg:col-span-1" 
+                    disabled={!filterSubcategory || thirdSubcategoryOptions.length <= 1} // Disable if no subcat or no options
                 />
-
                 <Select
                   options={brandOptions}
-                  value={selectedBrand}
+                    value={filterBrand || ""} 
                   onChange={handleBrandChange}
                   placeholder="Марка"
-                  className="w-full"
+                    className="lg:col-span-1"
                 />
-
                 <Select
                   options={modelOptions}
-                  value={selectedModel}
+                    value={filterModel || ""} 
                   onChange={handleModelChange}
                   placeholder="Модель"
-                  className="w-full"
-                  disabled={!selectedBrand}
+                    className="lg:col-span-1" 
+                    disabled={!filterBrand || modelOptions.length <= 1} // Disable if no brand or no options
                 />
-
                 <Select
                   options={modificationOptions}
-                  value={selectedModification}
-                  onChange={(value) => setSelectedModification(value)}
+                    value={filterModification || ""} 
+                    onChange={handleModificationChange} 
                   placeholder="Модификация"
-                  className="w-full"
-                  disabled={!selectedModel}
+                    className="lg:col-span-1" 
+                    disabled={!filterModel || modificationOptions.length <= 1} // Disable if no model or no options
+                />
+                <Button 
+                    label="Сбросить"
+                    onClick={handleResetFilters}
+                    className="w-full h-full lg:col-span-1 hover:text-black"
+                    variant="noArrow2"
                 />
               </div>
             </div>
@@ -708,7 +726,7 @@ const ProductSearchSection = () => {
                 variant="noArrow"
                 className="flex justify-center items-center w-full border-none"
                 hideArrow
-                onClick={() => setIsVinModalOpen(true)}
+                onClick={openVinModal}
               />
             </div>
           </div>
@@ -717,25 +735,22 @@ const ProductSearchSection = () => {
         {/* VIN Request Modal */}
         <VinRequestModal
           isOpen={isVinModalOpen}
-          onClose={() => setIsVinModalOpen(false)}
+          onClose={closeVinModal}
         />
 
         {/* Category cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
-          {isLoading ? (
-            // Loading state for category cards
-            Array(5).fill(0).map((_, index) => (
-              <div key={index} className="bg-white p-4 shadow-sm h-[140px] animate-pulse">
-                <div className="h-16 w-16 mx-auto bg-gray-200 mb-4"></div>
-                <div className="h-4 bg-gray-200 w-3/4 mx-auto"></div>
-              </div>
+          {isMetadataLoading ? (
+            // Show skeleton loaders for cards
+            Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="bg-gray-100 rounded-lg animate-pulse h-[150px]"></div>
             ))
           ) : categoryCards.length > 0 ? (
             categoryCards.map((category) => (
               <div 
                 key={category.id}
                 onClick={() => handleCategoryClick(category.slug)}
-                className="cursor-pointer"
+                className="cursor-pointer transition-transform duration-200"
               >
                 <CategoryCard
                   title={category.title}

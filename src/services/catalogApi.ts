@@ -69,8 +69,17 @@ const buildQueryParams = (filters: CatalogFilters = {}): URLSearchParams => {
   if (filters.featured !== undefined) {
     queryParams.append('where[featured][equals]', filters.featured.toString());
   }
+  
+  // Handle complex search across multiple fields
   if (filters.search) {
-    queryParams.append('where[name][like]', filters.search);
+    const searchTerm = filters.search;
+    // Create an OR group for the search term across specified fields
+    queryParams.append('where[or][0][name][like]', searchTerm);
+    queryParams.append('where[or][1][oem][like]', searchTerm);
+    queryParams.append('where[or][2][article][like]', searchTerm);
+    queryParams.append('where[or][3][category.name][like]', searchTerm);
+    queryParams.append('where[or][4][subcategory.name][like]', searchTerm);
+    queryParams.append('where[or][5][thirdsubcategory.name][like]', searchTerm);
   }
 
   return queryParams;
@@ -406,10 +415,14 @@ export const getCatalogProducts = async (filters: CatalogFilters = {}): Promise<
       queryParams.append('where[featured][equals]', optimizedFilters.featured.toString());
     }
     if (optimizedFilters.search) {
-      // Search in name, OEM, and article fields
-      queryParams.append('where[or][0][name][like]', optimizedFilters.search);
-      queryParams.append('where[or][1][oem][like]', optimizedFilters.search);
-      queryParams.append('where[or][2][article][like]', optimizedFilters.search);
+      // Search in name, OEM, article, and category names
+      const searchTerm = optimizedFilters.search;
+      queryParams.append('where[or][0][name][like]', searchTerm);
+      queryParams.append('where[or][1][oem][like]', searchTerm);
+      queryParams.append('where[or][2][article][like]', searchTerm);
+      queryParams.append('where[or][3][category.name][like]', searchTerm);      // Add category name
+      queryParams.append('where[or][4][subcategory.name][like]', searchTerm);   // Add subcategory name
+      queryParams.append('where[or][5][thirdsubcategory.name][like]', searchTerm); // Add third subcategory name
     }
     
     console.log('Optimized catalog query:', queryParams.toString());
