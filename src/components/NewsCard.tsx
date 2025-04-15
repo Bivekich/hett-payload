@@ -23,7 +23,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
 
   return (
     <div
-      className={`flex flex-col grow p-4 text-base leading-snug ${bgColorClass} transition-all duration-300 h-full cursor-pointer`}
+      className={`flex flex-col grow text-base leading-snug ${bgColorClass} transition-all duration-300 h-full cursor-pointer`}
     >
       {imageUrl && (
         <div className="relative w-full h-[200px]">
@@ -33,25 +33,27 @@ const NewsCard: React.FC<NewsCardProps> = ({
             height={380}
             width={380}
             alt="News article thumbnail"
-            className="object-contain rounded-none"
-            
+            className="object-cover rounded-none w-full h-full"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-         
           />
         </div>
       )}
-      <div className={`self-start mt-5 text-[16px] ${dateColorClass}`}>
-        {date}
-      </div>
-      <div
-        className={`mt-5 font-semibold leading-6 text-[16px] ${titleColorClass}`}
-      >
-        {title}
-      </div>
-      <div
-        className={`self-start mt-8 ${readMoreColorClass} hover:text-[#2d8c2a] transition-colors flex h-full items-end text-[16px]`}
-      >
-        Читать подробнее
+      <div className="py-4 flex flex-col justify-between h-full">
+        <div>
+          <div className={`text-[16px] ${dateColorClass}`}>
+            {date}
+          </div>
+          <div
+            className={`mt-4 font-semibold leading-6 text-[16px] ${titleColorClass}`}
+          >
+            {title}
+          </div>
+        </div>
+        <div
+          className={`${readMoreColorClass} hover:text-[#2d8c2a] transition-colors text-[16px] mt-6`}
+        >
+          Читать подробнее
+        </div>
       </div>
     </div>
   );

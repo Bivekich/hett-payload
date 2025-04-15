@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import ProductDetail from "../../../../components/ProductDetail";
-import { Product } from "../../../../types/product";
+import { Product, ProductImage } from "../../../../types/product";
 import { useParams } from "next/navigation";
 import { getProduct } from "../../../../services/catalogApi";
 import { Product as CmsProduct } from "../../../../types/catalog";
@@ -25,6 +25,17 @@ const convertCmsProductToProduct = (cmsProduct: CmsProduct): Product => {
     }
   }
   
+  // --- NEW: Process the full images array for the gallery ---
+  const galleryImages: ProductImage[] = (cmsProduct.images || [])
+    .map(img => ({
+      // Map the nested image object containing the URL
+      image: {
+        url: (typeof img.image === 'object' && img.image !== null) ? img.image.url : undefined
+      }
+      // We could add id and alt here if needed by the ProductImage type/component later
+    }))
+    .filter(img => img.image.url); // Ensure we only include images with a URL
+
   // Process brands (array)
   let brandNames: string[] = [];
   if (Array.isArray(cmsProduct.brand)) {
@@ -54,12 +65,11 @@ const convertCmsProductToProduct = (cmsProduct: CmsProduct): Product => {
       modification: typeof cmsProduct.modification === 'string' ? cmsProduct.modification : cmsProduct.modification?.name || '',
       oem: cmsProduct.oem || '',
       image: {
-        data: {
-          attributes: {
-            url: imageUrl,
-          },
-        },
+        data: imageUrl ? { // Keep the logic for the main single image display
+          attributes: { url: imageUrl },
+        } : undefined,
       },
+      images: galleryImages, // <-- PASS THE PROCESSED ARRAY HERE
       // Convert rich text description to string or pass undefined
       description: cmsProduct.description 
         ? JSON.stringify(cmsProduct.description) 

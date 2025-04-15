@@ -83,8 +83,13 @@ export const convertCmsProductToProduct = (cmsProduct: CmsProduct /* CmsProduct 
   }
   
   // If brandValue ended up as an empty array, represent as empty string for ProductCard/Details
-  if (Array.isArray(brandValue) && brandValue.length === 0) {
-      brandValue = ''; // Change to empty string if no brands found/populated
+  let finalBrandValue: string[];
+  if (Array.isArray(brandValue)) {
+      finalBrandValue = brandValue; // It's already string[]
+  } else if (typeof brandValue === 'string' && brandValue !== '') {
+      finalBrandValue = [brandValue]; // Wrap single string in array
+  } else {
+      finalBrandValue = []; // Default to empty array for empty string or other cases
   }
   
   return {
@@ -93,8 +98,9 @@ export const convertCmsProductToProduct = (cmsProduct: CmsProduct /* CmsProduct 
       name: cmsProduct.name || '',
       article: cmsProduct.article || '',
       oem: cmsProduct.oem || '',
-      brand: brandValue, // Assign the processed string or string array
+      brand: finalBrandValue, // Assign the guaranteed string[]
       model: typeof cmsProduct.model === 'object' && cmsProduct.model !== null ? cmsProduct.model.name : '',
+      modification: typeof cmsProduct.modification === 'object' && cmsProduct.modification !== null ? cmsProduct.modification.name : '',
       slug: cmsProduct.slug || '',
       image: { // Pass the processed display image URL for ProductCard
         data: displayImageUrl ? {

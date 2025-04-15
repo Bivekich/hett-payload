@@ -117,7 +117,7 @@ const NewsSection = () => {
         </h2>
 
         <div className="mt-10 w-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {currentNews.map((news) => (
               <div key={news.id} className="flex flex-col">
                 <Link href={`/news/${news.slug}/${news.id}`} className="h-full">

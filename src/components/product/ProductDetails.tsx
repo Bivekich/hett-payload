@@ -55,24 +55,30 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
 
   // Create thumbnails array from actual product images
   const thumbnails: Thumbnail[] = [
-    // Add the main image first
-    { id: 1, url: mainImageUrl || null },
+    // Add the main image first if it exists
+    ...(mainImageUrl ? [{ id: 1, url: mainImageUrl }] : []),
     // Add additional images from the images array
     ...images.map((img, index) => {
-      let imgUrl = img.image?.url;
+      let imgUrl = '';
+      // Handle different image formats
+      if (typeof img === 'string') {
+        imgUrl = img;
+      } else if (img.image?.url) {
+        imgUrl = img.image.url;
+      } else if (typeof img.image === 'string') {
+        imgUrl = img.image;
+      }
+      
+      // Make URL absolute if it's relative
       if (imgUrl && imgUrl.startsWith('/')) {
         imgUrl = `${API_URL}${imgUrl}`;
       }
+      
       return {
-        id: index + 2, // Start from 2 since main image is 1
+        id: (mainImageUrl ? index + 2 : index + 1), // Start from 2 if main image exists, otherwise from 1
         url: imgUrl || null
       };
-    }),
-    // Fill remaining slots with null thumbnails if needed
-    ...Array(Math.max(0, 4 - images.length)).fill(null).map((_, index) => ({
-      id: images.length + 2 + index,
-      url: null
-    }))
+    }).filter(thumb => thumb.url) // Filter out thumbnails with no URL
   ];
 
   // Create characteristics array for the ProductCharacteristics component
@@ -121,9 +127,6 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
           {product.attributes.article && (
             <p className="text-gray-600 mb-1">Артикул: {product.attributes.article}</p>
           )}
-          <p className="text-gray-600 mb-1">Марка: {brandDisplayString}</p>
-          <p className="text-gray-600 mb-1">Модель: {model}</p>
-          <p className="text-gray-600 mb-1">Модификация: {modification}</p>
           {product.attributes.price && (
             <p className="text-2xl font-bold mt-4">{product.attributes.price} ₽</p>
           )}

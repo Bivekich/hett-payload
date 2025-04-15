@@ -23,8 +23,6 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
     formattedMainImageUrl = `${API_URL}${formattedMainImageUrl}`;
   }
   
-  const hasRealImage = formattedMainImageUrl && !formattedMainImageUrl.includes("placehold.co");
-
   // Filter out thumbnails with no URL and only create valid ones
   // Also format thumbnail URLs if they're relative
   const validThumbnails = thumbnails
@@ -37,23 +35,28 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
       return { ...thumbnail, url, index };
     });
 
+  // Get the currently selected image URL
+  const selectedImageUrl = validThumbnails[selectedThumbnail]?.url || formattedMainImageUrl;
+  const hasSelectedImage = selectedImageUrl && !selectedImageUrl.includes("placehold.co");
+
   // Log the image URL to help debug
-  console.log("Product image URL:", formattedMainImageUrl);
+  console.log("Product image URL:", selectedImageUrl);
 
   return (
     <div className="flex flex-col justify-start min-w-[240px] w-[590px] max-md:max-w-full">
       {/* Main Product Image - Fixed height container */}
-      <div className="flex items-center justify-center bg-white h-[400px]  relative">
-        {hasRealImage ? (
+      <div className="flex items-center justify-center bg-white h-[400px] border border-gray-100 relative">
+        {hasSelectedImage ? (
           // Use Image component with unoptimized for external URLs
           <Image
-            src={formattedMainImageUrl}
+            src={selectedImageUrl}
             alt="Product"
-            className="max-h-full max-w-full object-contain border border-gray-100"
+            className="max-h-full max-w-full object-contain"
             width={590}
             height={590}
             style={{ objectFit: 'contain' }}
-            unoptimized={!formattedMainImageUrl.startsWith('/')}
+            unoptimized={!selectedImageUrl.startsWith('/')}
+            key={selectedImageUrl} // Add key to force re-render on image change
           />
         ) : (
           <Image
@@ -88,6 +91,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                     className="object-contain"
                     fill
                     unoptimized={!thumbnail.url.startsWith('/')}
+                    key={thumbnail.id} // Add key for thumbnails as well
                   />
                 </div>
               ) : (
