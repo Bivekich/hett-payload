@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Container from "./Container";
 import ProductCard from "./uiKit/ProductCard";
@@ -182,6 +182,7 @@ interface CatalogProps {
 const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const searchQuery = searchParams?.get('search');
   
   // State for metadata
@@ -211,8 +212,9 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   const [error, setError] = useState<string | null>(null);
   const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
   const [metadataLoaded, setMetadataLoaded] = useState<boolean>(false);
+  const [isInitialSyncComplete, setIsInitialSyncComplete] = useState<boolean>(false);
   
-  // Filter states - single source of truth for what's displayed in the UI
+  // Filter states - Unified state for logic and display
   const [filterCategory, setFilterCategory] = useState<string | null>(initialCategory || null);
   const [filterSubcategory, setFilterSubcategory] = useState<Subcategory | null>(null);
   const [filterThirdSubcategory, setFilterThirdSubcategory] = useState<ThirdSubcategory | null>(null);
@@ -221,14 +223,6 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   const [filterModification, setFilterModification] = useState<string | null>(null);
   const [hasActiveSearch, setHasActiveSearch] = useState<boolean>(false);
   
-  // Form values - what's displayed in the form inputs
-  const [formCategory, setFormCategory] = useState<string | null>(initialCategory || null);
-  const [formSubcategory, setFormSubcategory] = useState<Subcategory | null>(null);
-  const [formThirdSubcategory, setFormThirdSubcategory] = useState<ThirdSubcategory | null>(null);
-  const [formBrand, setFormBrand] = useState<string | null>(null);
-  const [formModel, setFormModel] = useState<string | null>(null);
-  const [formModification, setFormModification] = useState<string | null>(null);
-
   // Load all the metadata (categories, subcategories, brands, models, modifications)
   useEffect(() => {
     const fetchMetadata = async () => {
@@ -530,10 +524,11 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     currentPage,
   ]);
 
-  // Parse search parameters from URL and/or pathname
+  // Parse search parameters from URL and sync state (Effect 1)
   useEffect(() => {
     if (!metadataLoaded) return;
     
+    console.log("Effect 1: Parsing URL params", searchParams.toString());
     // Start with defaults
     let newCategory = initialCategory || null;
     let newSubcategory: Subcategory | null = null;
@@ -543,7 +538,6 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     let newModification: string | null = null;
     let searchActive = false;
     
-    // Parse URL search parameters (query string)
     if (searchParams) {
       const urlCategory = searchParams.get('category');
       const urlSubcategory = searchParams.get('subcategory') || searchParams.get('subcat');
@@ -551,13 +545,10 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
       const urlBrand = searchParams.get('brand');
       const urlModel = searchParams.get('model');
       const urlModification = searchParams.get('modification') || searchParams.get('mod');
-      const searchQuery = searchParams.get('search');
+      const urlSearchQuery = searchParams.get('search'); // Use a different var name to avoid conflict with component scope searchQuery
       
-      // If any search parameter is present, mark search as active
-      if (urlCategory || urlSubcategory || urlThirdSubcategory || urlBrand || urlModel || urlModification || searchQuery) {
+      if (urlCategory || urlSubcategory || urlThirdSubcategory || urlBrand || urlModel || urlModification || urlSearchQuery) {
         searchActive = true;
-        
-        // Apply search parameters if present
         if (urlCategory) newCategory = urlCategory;
         if (urlBrand) newBrand = urlBrand;
         if (urlModel) newModel = urlModel;
@@ -575,15 +566,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
           if (matchedThirdSubcategory) newThirdSubcategory = matchedThirdSubcategory;
         }
         
-        console.log("Search params found:", { 
-          category: urlCategory, 
-          subcategory: urlSubcategory,
-          thirdSubcategory: urlThirdSubcategory,
-          brand: urlBrand,
-          model: urlModel,
-          modification: urlModification,
-          search: searchQuery
-        });
+        console.log("Effect 1: Applying params from URL", { newCategory, newSubcategory, newThirdSubcategory, newBrand, newModel, newModification });
       }
     }
     
@@ -602,7 +585,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
       }
     }
     
-    // Apply the determined filters (both to filters and form)
+    // Apply the determined filters (ONLY to filter... state)
     setFilterCategory(newCategory);
     setFilterSubcategory(newSubcategory);
     setFilterThirdSubcategory(newThirdSubcategory);
@@ -611,37 +594,92 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     setFilterModification(newModification);
     setHasActiveSearch(searchActive);
     
-    // Also update form state to match
-    setFormCategory(newCategory);
-    setFormSubcategory(newSubcategory);
-    setFormThirdSubcategory(newThirdSubcategory);
-    setFormBrand(newBrand);
-    setFormModel(newModel);
-    setFormModification(newModification);
-    
-    // Reset pagination when filters change
     setCurrentPage(1);
+
+    setIsInitialSyncComplete(true); 
+    console.log("Effect 1: Initial sync complete");
     
   }, [metadataLoaded, searchParams, pathname, initialCategory, categories, subcategories, thirdSubcategories]);
 
-  // Use a separate useEffect to fetch products when filters change
+  // Use a separate useEffect to fetch products when filters change (Effect 3)
   useEffect(() => {
-    if (!metadataLoaded) return;
+    // Only fetch if the initial sync is done to avoid fetching with potentially incomplete state
+    if (!metadataLoaded || !isInitialSyncComplete) return;
     
-    // Fetch products based on current filters
+    console.log("Effect 3: Fetching products triggered by state/page change");
     fetchProducts();
     
   }, [
     metadataLoaded, 
+    isInitialSyncComplete, // Add flag dependency
     filterCategory, 
     filterSubcategory, 
     filterThirdSubcategory, 
     filterBrand, 
     filterModel, 
     filterModification,
-    searchQuery,
+    searchQuery, // This uses the searchQuery derived from searchParams in the component scope
     currentPage,
     fetchProducts
+  ]);
+
+  // Update URL when filters change (Effect 2)
+  useEffect(() => {
+    // Wait for metadata AND initial sync from URL to complete
+    if (!metadataLoaded || !isInitialSyncComplete) {
+      // console.log("Effect 2: Skipping URL update (pre-sync)");
+      return; 
+    }
+
+    // console.log("Effect 2: Checking if URL needs update based on state");
+    const newQueryParams = new URLSearchParams();
+    const currentSearchFromUrl = searchParams.get('search'); 
+
+    // Build query params from the current FILTER state
+    if (filterCategory) newQueryParams.set('category', filterCategory);
+    if (filterSubcategory) { 
+      const subcatSlug = filterSubcategory.attributes.slug;
+      if (subcatSlug) {
+        newQueryParams.set('subcategory', subcatSlug);
+      } else {
+        console.warn(`Subcategory ${filterSubcategory.id} missing slug for URL`);
+      }
+    }
+    if (filterThirdSubcategory) {
+      const thirdSubcatSlug = filterThirdSubcategory.attributes.slug;
+      if (thirdSubcatSlug) {
+        newQueryParams.set('thirdsubcategory', thirdSubcatSlug);
+      } else {
+        console.warn(`Third Subcategory ${filterThirdSubcategory.id} missing slug for URL`);
+      }
+    }
+    if (filterBrand) newQueryParams.set('brand', filterBrand);
+    if (filterModel) newQueryParams.set('model', filterModel);
+    if (filterModification) newQueryParams.set('modification', filterModification);
+
+    const newQueryString = newQueryParams.toString();
+    const currentQueryString = searchParams.toString(); 
+
+    if (newQueryString !== currentQueryString) {
+      // console.log(`Effect 2: Updating URL. Current='${currentQueryString}', New='${newQueryString}'`);
+      router.push(`${pathname}${newQueryString ? '?' + newQueryString : ''}`, { scroll: false });
+    } else {
+      // console.log("Effect 2: No URL update needed (state matches URL)");
+    }
+
+  }, [
+    // Depend on filter states AND the sync flag
+    filterCategory, 
+    filterSubcategory, 
+    filterThirdSubcategory, 
+    filterBrand, 
+    filterModel, 
+    filterModification, 
+    isInitialSyncComplete, // Add flag dependency
+    // Keep others needed for the effect execution
+    metadataLoaded, 
+    router,         
+    pathname
   ]);
 
   // Generate select options for UI
@@ -653,29 +691,45 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     }))
   ];
   
-  const subcategoryOptions = [
-    { value: "", label: "Все подкатегории" },
-    ...filteredSubcategories
+  // MODIFIED SUBCATEGORY OPTIONS GENERATION
+  const generateSubcategoryOptions = () => {
+    const options = [{ value: "", label: "Все подкатегории" }];
+
+    // Explicitly add the currently selected subcategory if it exists
+    if (filterSubcategory) {
+      options.push({
+        value: filterSubcategory.id.toString(),
+        label: filterSubcategory.attributes.name,
+      });
+    }
+
+    // Add other relevant subcategories from the filtered list
+    filteredSubcategories
       .filter(sub => {
-        if (!formCategory) return true;
-        if (typeof sub.category === 'object' && sub.category) {
-          return sub.category.slug === formCategory;
-        }
-        return false;
+        // Filter based on category and ensure not duplicating the selected one
+        if (filterSubcategory && sub.id === filterSubcategory.id) return false; // Already added
+        if (!filterCategory) return true; 
+        return typeof sub.category === 'object' && sub.category?.slug === filterCategory;
       })
-      .map((sub) => ({
-        value: sub.id.toString(),
-        label: sub.attributes.name,
-      }))
-  ];
+      .forEach((sub) => {
+        options.push({
+          value: sub.id.toString(),
+          label: sub.attributes.name,
+        });
+      });
+
+    return options;
+  };
+  const subcategoryOptions = generateSubcategoryOptions();
 
   const thirdSubcategoryOptions = [
     { value: "", label: "Все третьи подкатегории" },
     ...filteredThirdSubcategories
       .filter(third => {
-        if (!formSubcategory) return true;
+        // Filter based on the ACTUAL filterSubcategory state
+        if (!filterSubcategory) return true; 
         if (typeof third.subcategory === 'object' && third.subcategory) {
-          return third.subcategory.id === formSubcategory.id;
+          return third.subcategory.id === filterSubcategory.id;
         }
         return false;
       })
@@ -709,24 +763,15 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     }))
   ];
 
-  // Form handlers - UPDATED to apply filters immediately
+  // Form handlers - UPDATED to only set filter... state
   const handleCategoryChange = (value: string) => {
     const newCategorySlug = value || null;
-    setFormCategory(newCategorySlug);
-    setFilterCategory(newCategorySlug); // Apply filter immediately
-    // Reset downstream form and filter states
-    setFormSubcategory(null);
+    // setFormCategory(newCategorySlug); // Removed
+    setFilterCategory(newCategorySlug); 
+    // Reset downstream filter states
     setFilterSubcategory(null);
-    setFormThirdSubcategory(null);
     setFilterThirdSubcategory(null);
-    // Optionally reset brand/model/mod if category should clear them
-    // setFormBrand(null);
-    // setFilterBrand(null);
-    // setFormModel(null);
-    // setFilterModel(null);
-    // setFormModification(null);
-    // setFilterModification(null);
-    setCurrentPage(1); // Reset page on filter change
+    setCurrentPage(1); 
   };
 
   const handleSubcategoryChange = (value: string) => {
@@ -734,10 +779,9 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     if (value) {
       newSubcategory = subcategories.find((s) => s.id.toString() === value) || null;
     }
-    setFormSubcategory(newSubcategory);
-    setFilterSubcategory(newSubcategory); // Apply filter immediately
-    // Reset downstream form and filter states
-    setFormThirdSubcategory(null);
+    // setFormSubcategory(newSubcategory); // Removed
+    setFilterSubcategory(newSubcategory); 
+    // Reset downstream filter states
     setFilterThirdSubcategory(null);
     setCurrentPage(1);
   };
@@ -747,67 +791,55 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     if (value) {
       newThirdSub = thirdSubcategories.find((t) => t.id.toString() === value) || null;
     }
-    setFormThirdSubcategory(newThirdSub);
-    setFilterThirdSubcategory(newThirdSub); // Apply filter immediately
+    // setFormThirdSubcategory(newThirdSub); // Removed
+    setFilterThirdSubcategory(newThirdSub); 
     setCurrentPage(1);
   };
   
   const handleBrandChange = (value: string) => {
     const newBrandSlug = value || null;
-    setFormBrand(newBrandSlug);
-    setFilterBrand(newBrandSlug); // Apply filter immediately
-    // Reset downstream form and filter states
-    setFormModel(null);
+    // setFormBrand(newBrandSlug); // Removed
+    setFilterBrand(newBrandSlug); 
+    // Reset downstream filter states
     setFilterModel(null);
-    setFormModification(null);
     setFilterModification(null);
-    // Optionally reset category filters if brand should clear them
-    // setFormCategory(null);
-    // setFilterCategory(null);
-    // setFormSubcategory(null);
-    // setFilterSubcategory(null);
-    // setFormThirdSubcategory(null);
-    // setFilterThirdSubcategory(null);
     setCurrentPage(1);
   };
   
   const handleModelChange = (value: string) => {
     const newModelSlug = value || null;
-    setFormModel(newModelSlug);
-    setFilterModel(newModelSlug); // Apply filter immediately
-    // Reset downstream form and filter states
-    setFormModification(null);
+    // setFormModel(newModelSlug); // Removed
+    setFilterModel(newModelSlug); 
+    // Reset downstream filter states
     setFilterModification(null);
     setCurrentPage(1);
   };
   
   const handleModificationChange = (value: string) => {
      const newModificationSlug = value || null;
-     setFormModification(newModificationSlug);
-     setFilterModification(newModificationSlug); // Apply filter immediately
+     // setFormModification(newModificationSlug); // Removed
+     setFilterModification(newModificationSlug); 
     setCurrentPage(1);
   };
 
-  // Reset filters handler
+  // Reset filters handler - UPDATED
   const handleResetFilters = () => {
-    setFormCategory(initialCategory || null);
+    // setFormCategory(initialCategory || null); // Removed
     setFilterCategory(initialCategory || null);
-    setFormSubcategory(null);
+    // setFormSubcategory(null); // Removed
     setFilterSubcategory(null);
-    setFormThirdSubcategory(null);
+    // setFormThirdSubcategory(null); // Removed
     setFilterThirdSubcategory(null);
-    setFormBrand(null);
+    // setFormBrand(null); // Removed
     setFilterBrand(null);
-    setFormModel(null);
+    // setFormModel(null); // Removed
     setFilterModel(null);
-    setFormModification(null);
+    // setFormModification(null); // Removed
     setFilterModification(null);
     
-    // Reset pagination
     setCurrentPage(1);
-    
-    // Close mobile filters if open
     setShowMobileFilters(false);
+    router.push('/catalog', { scroll: false });
   };
 
   // Pagination handlers
@@ -828,11 +860,6 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     setShowMobileFilters(!showMobileFilters);
   };
 
-  // Get selected category name for display
-  const selectedCategoryName = filterCategory 
-    ? categories.find(cat => cat.slug === filterCategory)?.name || "Каталог" 
-    : "Каталог продукции";
-
   // Generate pagination items
   const paginationItems = Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1);
 
@@ -840,7 +867,8 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     <div className="bg-[#F5F5F5]">
       <Container>
         <div className="py-4 md:py-8">
-          {/* Breadcrumbs */}
+          {/* Breadcrumbs - REMOVED */}
+          {/* 
           <div className="flex items-center mb-4 md:mb-6 text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
             <Link href="/" className="text-[#9A9A9A] hover:text-[#38AE34]">
               Главная
@@ -868,21 +896,10 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
                 </span>
               </>
             )}
-          </div>
+          </div> 
+          */}
 
-          {/* Page title */}
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 md:mb-8 text-[#3B3B3B] font-[Roboto_Condensed]">
-            {filterThirdSubcategory
-              ? filterThirdSubcategory.attributes.name
-              : filterSubcategory
-                ? filterSubcategory.attributes.name
-                : selectedCategoryName}
-            {searchParams?.get('search') && 
-              <span className="font-normal text-lg ml-2">
-              
-              </span>
-            }
-          </h1>
+          
 
           {/* Mobile filter toggle button */}
           <div className="flex md:hidden mb-4">
@@ -908,7 +925,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
             <div className="grid grid-cols-1 md:grid-cols-7 gap-3 md:gap-5">
               <Select
                 options={categoryOptions}
-                value={formCategory || ""}
+                value={filterCategory || ""}
                 onChange={handleCategoryChange}
                 placeholder="Категория"
                 className="w-full"
@@ -916,25 +933,25 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
               
               <Select
                 options={subcategoryOptions}
-                value={formSubcategory ? formSubcategory.id.toString() : ""}
+                value={filterSubcategory ? filterSubcategory.id.toString() : ""}
                 onChange={handleSubcategoryChange}
                 placeholder="Подкатегория"
                 className="w-full"
-                disabled={!formCategory}
+                disabled={!filterCategory}
               />
 
               <Select
                 options={thirdSubcategoryOptions}
-                value={formThirdSubcategory ? formThirdSubcategory.id.toString() : ""}
+                value={filterThirdSubcategory ? filterThirdSubcategory.id.toString() : ""}
                 onChange={handleThirdSubcategoryChange}
                 placeholder="Третья подкатегория"
                 className="w-full"
-                disabled={!formSubcategory}
+                disabled={!filterSubcategory}
               />
 
               <Select
                 options={brandOptions}
-                value={formBrand || ""}
+                value={filterBrand || ""}
                 onChange={handleBrandChange}
                 placeholder="Марка"
                 className="w-full"
@@ -942,20 +959,20 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
 
               <Select
                 options={modelOptions}
-                value={formModel || ""}
+                value={filterModel || ""}
                 onChange={handleModelChange}
                 placeholder="Модель"
                 className="w-full"
-                disabled={!formBrand}
+                disabled={!filterBrand}
               />
 
               <Select
                 options={modificationOptions}
-                value={formModification || ""}
+                value={filterModification || ""}
                 onChange={handleModificationChange}
                 placeholder="Модификация"
                 className="w-full"
-                disabled={!formModel}
+                disabled={!filterModel}
               />
 
               <Button

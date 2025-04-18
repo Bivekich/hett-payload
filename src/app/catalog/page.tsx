@@ -2,22 +2,25 @@
 
 import React, { Suspense } from "react";
 import Catalog from "../../components/Catalog";
+// import Breadcrumbs from "../../components/uiKit/Breadcrumbs";
 import SmallBanner from "../../components/SmallBanner";
 import PageDescription from "../../components/PageDescription";
 
 // Loading fallback component
-const CatalogLoading = () => (
-  <div className="flex justify-center items-center py-16">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#38AE34]"></div>
-  </div>
-);
+const CatalogLoading = () => <div>Загрузка каталога...</div>;
 
-const CatalogPage = () => {
+const CatalogPage: React.FC = () => {
+  // const breadcrumbs = [
+  //   { label: 'Главная', href: '/' },
+  //   { label: 'Каталог' },
+  // ];
+
   return (
     <>
       <SmallBanner title="Каталог запчастей Hett Automotive" />
+      {/* <Breadcrumbs items={breadcrumbs} /> */}
       <Suspense fallback={<CatalogLoading />}>
-        <Catalog />
+        <Catalog initialCategory={undefined} />
       </Suspense>
       <PageDescription pageType="catalog" />
     </>

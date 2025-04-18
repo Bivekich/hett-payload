@@ -1,12 +1,20 @@
+import React, { Suspense } from 'react';
 import type { Metadata } from "next";
-import { Roboto_Condensed } from "next/font/google";
+import { Roboto, Roboto_Condensed } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-const robotoCondensed = Roboto_Condensed({
+const roboto = Roboto({
   subsets: ["latin", "cyrillic"],
   weight: ["300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-roboto",
+});
+
+const roboto_condensed = Roboto_Condensed({
+  subsets: ["latin", "cyrillic"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-roboto-condensed",
 });
 
 export const metadata: Metadata = {
@@ -16,17 +24,21 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body className={`${robotoCondensed.className} bg-white`}>
-        <div className="relative flex min-h-screen flex-col">
+    <html lang="ru">
+      <body 
+        className={`${
+          roboto.variable
+        } ${roboto_condensed.variable}`}
+      >
+        <Suspense fallback={null}>
           <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </div>
+        </Suspense>
+        <main className="flex-1 mt-[180px] md:mt-[160px]">{children}</main>
+        <Footer />
       </body>
     </html>
   );

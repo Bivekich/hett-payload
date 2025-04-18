@@ -14,7 +14,7 @@ import VinRequestModal from "./uiKit/VinRequestModal";
 import { getCustomPages, getSettings } from "@/services/api";
 import { getCategories } from "@/services/catalogApi";
 import { Category } from "@/types/catalog";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { API_URL } from "@/services/api";
 
 interface MobileMenuProps {
@@ -92,7 +92,7 @@ function MobileMenu({ isOpen, onClose, customPages, categories }: MobileMenuProp
     <div
       ref={menuRef}
       className={`
-        fixed top-0 left-0 w-full h-screen bg-black
+        fixed top-0 left-0 w-full h-screen bg-black 
         transform transition-all duration-300 ease-in-out
         ${isOpen ? "translate-y-0" : "-translate-y-full"}
         md:hidden
@@ -229,9 +229,11 @@ function MobileMenu({ isOpen, onClose, customPages, categories }: MobileMenuProp
 
 export default function Header() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileCatalogOpen, setIsMobileCatalogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isScrolled, setIsScrolled] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
@@ -239,6 +241,22 @@ export default function Header() {
   const [isVinModalOpen, setIsVinModalOpen] = useState(false);
   const [customPages, setCustomPages] = useState<{ id: number; title: string; slug: string }[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+
+  // Effect to sync searchQuery state with URL search param
+  useEffect(() => {
+    const urlSearchQuery = searchParams.get('search');
+    setSearchQuery(urlSearchQuery || "");
+  }, [searchParams]);
+
+  // Add scroll event listener
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 100);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Fetch site settings
   useEffect(() => {
@@ -291,12 +309,6 @@ export default function Header() {
     fetchCategories();
   }, []);
 
-  // Helper to get URL for social link by platform
-  const getSocialLinkUrl = (platform: string) => {
-    const link = settings?.header?.socialLinks?.find(link => link.platform === platform);
-    return link?.url || null;
-  };
-
   // Transform custom pages into menu items format and include about page
   const aboutMenuItems = [
     { text: "О компании", href: "/about" },
@@ -312,10 +324,27 @@ export default function Header() {
     setSearchQuery(query);
   };
 
-  // Handle search submission
+  // Handle search submission - UPDATED
   const handleSearchSubmit = () => {
     if (searchQuery.trim()) {
-      router.push(`/catalog?search=${encodeURIComponent(searchQuery.trim())}`);
+      // Get current parameters from the URL
+      const currentParams = new URLSearchParams(searchParams.toString());
+      // Set/update the search parameter
+      currentParams.set('search', searchQuery.trim()); 
+      // Build the final query string
+      const queryString = currentParams.toString();
+      // Navigate with combined parameters
+      router.push(`/catalog?${queryString}`);
+    } else {
+      // Optional: Handle case where search is empty but user clicks search
+      // Maybe remove the search param if it exists?
+      const currentParams = new URLSearchParams(searchParams.toString());
+      if (currentParams.has('search')) {
+        currentParams.delete('search');
+        const queryString = currentParams.toString();
+        router.push(`/catalog${queryString ? '?' + queryString : ''}`);
+      }
+      // Or just do nothing if search is empty
     }
   };
 
@@ -328,12 +357,14 @@ export default function Header() {
   };
 
   return (
-    <header ref={headerRef} className="w-full bg-white py-5">
+    <header ref={headerRef} className={`w-full bg-white fixed top-0 left-0 right-0 z-[999] transition-all duration-300 ${
+      isScrolled ? 'h-[80px] md:h-[100px]' : 'h-[180px] md:h-[160px]'
+    }`}>
       <div className="max-w-[1280px] mx-auto px-4 md:px-6">
         {/* Desktop Header - Hidden on mobile */}
         <div className="hidden md:block">
           {/* Top Row */}
-          <div className="flex flex-wrap gap-5 justify-between w-full">
+          <div className="flex flex-wrap gap-5 justify-between w-full py-5">
             {/* Left Side Group */}
             <div className="flex gap-8 items-center">
               {/* Logo */}
@@ -350,6 +381,33 @@ export default function Header() {
 
               {/* Catalog Dropdown */}
               <CatalogDropdownMenu />
+
+              {/* Search Icon - Appears when scrolled */}
+              <button 
+                onClick={() => setIsScrolled(false)}
+                className={`transition-all duration-300 transform ${
+                  isScrolled 
+                    ? 'opacity-100 translate-x-0 pointer-events-auto' 
+                    : 'opacity-0 -translate-x-4 pointer-events-none'
+                } hover:text-[#38AE34]`}
+                aria-label="Open search"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-[#555555] hover:text-[#38AE34] transition-colors"
+                >
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.3-4.3"></path>
+                </svg>
+              </button>
 
               {/* Navigation Links */}
               <div className="flex items-center">
@@ -459,7 +517,7 @@ export default function Header() {
           </div>
 
           {/* Bottom Row: Search and VIN */}
-          <div className="flex gap-5 mt-5 w-full">
+          <div className={`flex gap-5 w-full transition-all duration-300 transform ${isScrolled ? '-translate-y-[25px] opacity-0' : 'translate-y-0 opacity-100'} mb-5`}>
             {/* Search Bar */}
             <div ref={searchRef} className="flex-1 relative">
               <div className="flex items-center gap-2">
@@ -506,41 +564,32 @@ export default function Header() {
               className="min-w-[200px] border-none"
               onClick={() => setIsVinModalOpen(true)}
             />
-
-            {/* VIN Request Modal */}
-            <VinRequestModal
-              isOpen={isVinModalOpen}
-              onClose={() => setIsVinModalOpen(false)}
-            />
           </div>
         </div>
 
         {/* Mobile Header - Visible only on mobile */}
-        <div className="md:hidden relative">
+        <div className="md:hidden relative py-5">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <Link href="/" className="flex self-stretch relative group">
               <Image
                 src={logo}
                 alt="Логотип Hett Automotive"
-                className="w-full h-full object-contain"
-                width={126}
-                height={32}
+                className="object-contain"
+                width={140}
+                height={30}
               />
             </Link>
 
             {/* Mobile Actions */}
-            <div className="flex items-center">
+            <div className="flex items-center gap-2">
               {/* Catalog Button */}
-              <button
+              {/* <button
                 className="flex items-center bg-[#38AE34] text-white px-4 py-2 uppercase font-bold roboto-condensed-bold text-sm"
                 onClick={() => {
-                  console.log("Mobile catalog button clicked, current state:", isMobileCatalogOpen);
-                  // Close mobile menu if open
                   if (isMobileMenuOpen) {
                     setIsMobileMenuOpen(false);
                   }
-                  // Toggle catalog dropdown
                   setIsMobileCatalogOpen(!isMobileCatalogOpen);
                 }}
               >
@@ -558,195 +607,193 @@ export default function Header() {
                   />
                 </svg>
                 Каталог
-              </button>
+              </button> */}
 
-              {/* Social Links and Menu Button */}
-              <div className="items-center space-x-3 hidden md:flex">
-                {/* Telegram */}
-                <a
-                  href={getSocialLinkUrl('telegram') || footerData?.telegramLink || "https://t.me/hettautomotive"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transform hover:scale-[1.1] transition-all"
-                >
-                  <div className="w-6 h-6">
-                    <Image
-                      src={TelegramIcon}
-                      alt="Telegram"
-                      className="w-full h-full"
-                    />
-                  </div>
-                </a>
-
-                {/* WhatsApp */}
-                <a
-                  href={getSocialLinkUrl('whatsapp') || footerData?.whatsappLink || "https://wa.me/74952602060"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transform hover:scale-[1.1] transition-all"
-                >
-                  <div className="w-6 h-6">
-                    <Image
-                      src={WhatsAppIcon}
-                      alt="WhatsApp"
-                      className="w-full h-full"
-                    />
-                  </div>
-                </a>
-
-                {/* Menu Button */}
-                <button
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="flex items-center text-gray-600 px-2"
-                >
-                  <span className="text-sm font-bold mr-2">МЕНЮ</span>
-                  <div className="flex flex-col gap-1">
-                    <div className="w-5 h-0.5 bg-[#555555]"></div>
-                    <div className="w-5 h-0.5 bg-[#555555]"></div>
-                    <div className="w-5 h-0.5 bg-[#555555]"></div>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile Search */}
-          <div ref={searchRef} className="relative w-full mt-4">
-            <div className="flex items-center gap-2">
-              <div className="flex-1 border border-[#8898A4] hover:border-[#38AE34] focus-within:border-[#38AE34] transition-colors group h-10">
-                <div className="flex gap-2.5 items-center px-4 h-full">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="text-[#555555] group-focus-within:text-[#38AE34] transition-colors w-5 aspect-square"
-                  >
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.3-4.3"></path>
-                  </svg>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    onKeyDown={handleSearchKeyDown}
-                    placeholder="Поиск по названию, артикулу или OEM"
-                    className="flex-1 text-sm leading-relaxed outline-none roboto-condensed-regular placeholder:text-[#8898A4]"
-                  />
-                </div>
-              </div>
-              <Button
-                label="Найти"
-                variant="noArrow2"
-                onClick={handleSearchSubmit}
-                className="px-4 hover:text-black"
-              />
-            </div>
-          </div>
-
-          {/* VIN Request for Mobile */}
-          <div className="mt-3">
-            <Button
-              label="Запросить по VIN"
-              variant="noArrow"
-              className="w-full border-none"
-              onClick={() => setIsVinModalOpen(true)}
-            />
-          </div>
-        </div>
-
-        {/* VIN Request Modal (shared between mobile and desktop) */}
-        <VinRequestModal
-          isOpen={isVinModalOpen}
-          onClose={() => setIsVinModalOpen(false)}
-        />
-
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <MobileMenu 
-            isOpen={isMobileMenuOpen} 
-            onClose={() => setIsMobileMenuOpen(false)} 
-            customPages={customPages}
-            categories={categories}
-          />
-        )}
-
-        {/* Mobile Catalog Dropdown */}
-        {isMobileCatalogOpen && (
-          <div className="fixed top-0 left-0 right-0 bg-white shadow-lg z-50 p-6 md:hidden max-h-[90vh] overflow-y-auto">
-            {/* Close button */}
-            <button
-              onClick={() => setIsMobileCatalogOpen(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-[#38AE34] transition-colors"
-              aria-label="Close catalog menu"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+              {/* Search Icon - Appears when scrolled on mobile */}
+              <button 
+                onClick={() => setIsScrolled(false)}
+                className={`transition-all duration-300 transform ${
+                  isScrolled 
+                    ? 'opacity-100 scale-100 pointer-events-auto' 
+                    : 'opacity-0 scale-95 pointer-events-none'
+                } hover:text-[#38AE34] p-2`}
+                aria-label="Open search"
               >
-                <path
-                  d="M18 6L6 18M6 6L18 18"
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-            
-            <h3 className="text-[#555555] font-bold text-lg uppercase roboto-condensed-bold mb-4">Категории</h3>
-            
-            <div className="flex flex-col gap-3 max-w-[1280px] mx-auto">
-              {categories.length > 0 ? categories.map((category) => (
-                <Link
-                  key={category.id}
-                  href={`/catalog/${category.slug}`}
-                  className="flex items-center py-2 w-full hover:bg-gray-50 transition-colors rounded-md overflow-hidden"
-                  onClick={() => setIsMobileCatalogOpen(false)}
+                  className="text-[#555555] hover:text-[#38AE34] transition-colors"
                 >
-                  {/* Compact image thumbnail */}
-                  <div className="w-12 h-12 mr-3 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
-                    {category.image?.url ? (
-                      <Image 
-                        src={category.image.url.startsWith('/') ? `${API_URL}${category.image.url}` : category.image.url}
-                        alt={category.name}
-                        className="w-full h-full object-cover"
-                        width={48}
-                        height={48}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300">
-                          <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
-                          <circle cx="9" cy="9" r="2"></circle>
-                          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
-                        </svg>
-                      </div>
-                    )}
-                  </div>
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.3-4.3"></path>
+                </svg>
+              </button>
 
-                  {/* Category name */}
-                  <span className="text-[#555555] hover:text-[#38AE34] transition-colors text-[14px] font-medium roboto-condensed-medium">
-                    {category.name}
-                  </span>
-                </Link>
-              )) : (
-                <div className="py-3 text-gray-500 text-center">
-                  Загрузка категорий...
+              {/* Menu Button */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="flex items-center text-gray-600 px-2"
+              >
+                <div className="flex flex-col gap-1">
+                  <div className="w-5 h-0.5 bg-[#555555]"></div>
+                  <div className="w-5 h-0.5 bg-[#555555]"></div>
+                  <div className="w-5 h-0.5 bg-[#555555]"></div>
                 </div>
-              )}
+              </button>
             </div>
           </div>
-        )}
+
+          {/* Mobile Search and VIN - Hidden when scrolled */}
+          <div className={`transition-all duration-300 transform ${
+            isScrolled 
+              ? '-translate-y-[25px] opacity-0 pointer-events-none h-0 mt-0' 
+              : 'translate-y-0 opacity-100 pointer-events-auto mt-4'
+          }`}>
+            {/* Mobile Search */}
+            <div ref={searchRef} className="relative w-full">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 border border-[#8898A4] hover:border-[#38AE34] focus-within:border-[#38AE34] transition-colors group h-10">
+                  <div className="flex gap-2.5 items-center px-4 h-full">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-[#555555] group-focus-within:text-[#38AE34] transition-colors w-5 aspect-square"
+                    >
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <path d="m21 21-4.3-4.3"></path>
+                    </svg>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={handleSearchChange}
+                      onKeyDown={handleSearchKeyDown}
+                      placeholder="Поиск по названию, артикулу или OEM"
+                      className="flex-1 text-sm leading-relaxed outline-none roboto-condensed-regular placeholder:text-[#8898A4]"
+                    />
+                  </div>
+                </div>
+                <Button
+                  label="Найти"
+                  variant="noArrow2"
+                  onClick={handleSearchSubmit}
+                  className="px-4 hover:text-black"
+                />
+              </div>
+            </div>
+
+            {/* VIN Request for Mobile */}
+            <div className="mt-3">
+              <Button
+                label="Запросить по VIN"
+                variant="noArrow"
+                className="w-full border-none"
+                onClick={() => setIsVinModalOpen(true)}
+              />
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* VIN Request Modal (shared between mobile and desktop) */}
+      <VinRequestModal
+        isOpen={isVinModalOpen}
+        onClose={() => setIsVinModalOpen(false)}
+      />
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <MobileMenu 
+          isOpen={isMobileMenuOpen} 
+          onClose={() => setIsMobileMenuOpen(false)} 
+          customPages={customPages}
+          categories={categories}
+        />
+      )}
+
+      {/* Mobile Catalog Dropdown */}
+      {isMobileCatalogOpen && (
+        <div className="fixed top-0 left-0 right-0 bg-white shadow-lg z-50 p-6 md:hidden max-h-[90vh] overflow-y-auto">
+          {/* Close button */}
+          <button
+            onClick={() => setIsMobileCatalogOpen(false)}
+            className="absolute top-4 right-4 text-gray-500 hover:text-[#38AE34] transition-colors"
+            aria-label="Close catalog menu"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18 6L6 18M6 6L18 18"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+          
+          <h3 className="text-[#555555] font-bold text-lg uppercase roboto-condensed-bold mb-4">Категории</h3>
+          
+          <div className="flex flex-col gap-3 max-w-[1280px] mx-auto">
+            {categories.length > 0 ? categories.map((category) => (
+              <Link
+                key={category.id}
+                href={`/catalog?category=${category.slug}`}
+                className="flex items-center py-2 w-full hover:bg-gray-50 transition-colors rounded-md overflow-hidden"
+                onClick={() => setIsMobileCatalogOpen(false)}
+              >
+                {/* Compact image thumbnail */}
+                <div className="w-12 h-12 mr-3 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                  {category.image?.url ? (
+                    <Image 
+                      src={category.image.url.startsWith('/') ? `${API_URL}${category.image.url}` : category.image.url}
+                      alt={category.name}
+                      className="w-full h-full object-cover"
+                      width={48}
+                      height={48}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300">
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                        <circle cx="9" cy="9" r="2"></circle>
+                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                      </svg>
+                    </div>
+                  )}
+                </div>
+
+                {/* Category name */}
+                <span className="text-[#555555] hover:text-[#38AE34] transition-colors text-[14px] font-medium roboto-condensed-medium">
+                  {category.name}
+                </span>
+              </Link>
+            )) : (
+              <div className="py-3 text-gray-500 text-center">
+                Загрузка категорий...
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

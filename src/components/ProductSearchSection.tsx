@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import CategoryCard from "./CategoryCard";
 import Button from "./uiKit/Button";
 import Select from "./uiKit/Select";
@@ -70,9 +70,11 @@ const convertCmsThirdSubcategoryToThirdSubcategory = (cmsThirdSubcategory: CmsTh
 
 const ProductSearchSection = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isVinModalOpen, setIsVinModalOpen] = useState(false);
   const [isMetadataLoading, setIsMetadataLoading] = useState<boolean>(true);
   const [metadataLoaded, setMetadataLoaded] = useState<boolean>(false);
+  const [isFetchingFilterOptions, setIsFetchingFilterOptions] = useState<boolean>(false);
   
   // State for category cards
   const [categoryCards, setCategoryCards] = useState<CategoryCardData[]>([]);
@@ -108,6 +110,7 @@ const ProductSearchSection = () => {
 
   // --- Refactored Initial Metadata Fetch ---
   useEffect(() => {
+    console.log("[ProductSearchSection] Initial metadata fetch effect running (should only run once)");
     const fetchMetadata = async () => {
       try {
         setIsMetadataLoading(true);
@@ -190,7 +193,7 @@ const ProductSearchSection = () => {
       }
       
       try {
-      setIsMetadataLoading(true); // Use isMetadataLoading for loading indication
+      setIsFetchingFilterOptions(true);
       // console.log("(ProductSearchSection) Fetching products with filters:", { /* filters */ });
 
       const currentFilters: CatalogFilters = {
@@ -226,7 +229,7 @@ const ProductSearchSection = () => {
       // Optionally clear products on error or keep stale data?
       setCmsProducts([]);
     } finally {
-      setIsMetadataLoading(false); // Set metadata loading false
+      setIsFetchingFilterOptions(false);
     }
   }, [
     // Dependencies for fetchProducts
@@ -503,17 +506,61 @@ const ProductSearchSection = () => {
   };
   // --- End Update Handlers ---
   
-  // --- Search Initiation (Button click still navigates) ---
+  // --- Search Initiation - UPDATED ---
   const handleSearch = () => {
-    // Build query string from current filters
+    if (!searchQuery.trim()) {
+      alert("Пожалуйста, введите поисковый запрос.");
+      return;
+    }
+
+    // Create new URLSearchParams just for search
     const queryParams = new URLSearchParams();
-    if (searchQuery.trim()) queryParams.set('search', searchQuery.trim());
-    if (filterCategory) queryParams.set('category', filterCategory);
-    if (filterSubcategory) queryParams.set('subcategory', filterSubcategory.attributes.slug || filterSubcategory.id.toString());
-    if (filterThirdSubcategory) queryParams.set('thirdsubcategory', filterThirdSubcategory.attributes.slug || filterThirdSubcategory.id.toString());
-    if (filterBrand) queryParams.set('brand', filterBrand);
-    if (filterModel) queryParams.set('model', filterModel);
-    if (filterModification) queryParams.set('modification', filterModification);
+    queryParams.set('search', searchQuery.trim());
+    
+    const queryString = queryParams.toString();
+    router.push(`/catalog${queryString ? '?' + queryString : ''}`);
+  };
+
+  const handleApplyFilters = () => {
+    const isAnyFilterActive = 
+      filterCategory || 
+      filterSubcategory || 
+      filterThirdSubcategory || 
+      filterBrand || 
+      filterModel || 
+      filterModification;
+
+    if (!isAnyFilterActive) {
+      alert("Пожалуйста, выберите хотя бы один фильтр.");
+      return; 
+    }
+
+    // Create new URLSearchParams for filters only
+    const queryParams = new URLSearchParams();
+    
+    if (filterCategory) { 
+        queryParams.set('category', filterCategory);
+    }
+
+    if (filterSubcategory) { 
+        queryParams.set('subcategory', filterSubcategory.attributes.slug || filterSubcategory.id.toString());
+    }
+
+    if (filterThirdSubcategory) { 
+        queryParams.set('thirdsubcategory', filterThirdSubcategory.attributes.slug || filterThirdSubcategory.id.toString());
+    }
+
+    if (filterBrand) { 
+        queryParams.set('brand', filterBrand);
+    }
+
+    if (filterModel) { 
+        queryParams.set('model', filterModel);
+    }
+
+    if (filterModification) { 
+        queryParams.set('modification', filterModification);
+    }
     
     const queryString = queryParams.toString();
     router.push(`/catalog${queryString ? '?' + queryString : ''}`);
@@ -526,8 +573,20 @@ const ProductSearchSection = () => {
   };
   // --- End Search Initiation ---
 
+  // UPDATED Category Card Click Handler
   const handleCategoryClick = (categorySlug: string) => {
-    router.push(`/catalog/${categorySlug}`);
+    // Get current parameters to preserve others (like search)
+    const queryParams = new URLSearchParams(searchParams.toString());
+    
+    // Set the category based on the clicked card
+    queryParams.set('category', categorySlug);
+
+    // Clear potentially conflicting lower-level taxonomy params
+    queryParams.delete('subcategory');
+    queryParams.delete('thirdsubcategory');
+
+    const queryString = queryParams.toString();
+    router.push(`/catalog${queryString ? '?' + queryString : ''}`);
   };
   
   const openVinModal = () => setIsVinModalOpen(true);
@@ -666,14 +725,14 @@ const ProductSearchSection = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-4">
                 <Select
                   options={categoryOptions}
-                    value={filterCategory || ""} 
+                  value={filterCategory || ""} 
                   onChange={handleCategoryChange}
                   placeholder="Категория"
                     className="lg:col-span-1"
                 />
                 <Select
                   options={subcategoryOptions}
-                    value={filterSubcategory ? filterSubcategory.id.toString() : ""} 
+                  value={filterSubcategory ? filterSubcategory.id.toString() : ""} 
                   onChange={handleSubcategoryChange}
                   placeholder="Подкатегория"
                     className="lg:col-span-1" 
@@ -681,7 +740,7 @@ const ProductSearchSection = () => {
                 />
                 <Select
                   options={thirdSubcategoryOptions}
-                    value={filterThirdSubcategory ? filterThirdSubcategory.id.toString() : ""} 
+                  value={filterThirdSubcategory ? filterThirdSubcategory.id.toString() : ""} 
                   onChange={handleThirdSubcategoryChange}
                     placeholder="Раздел" 
                     className="lg:col-span-1" 
@@ -689,14 +748,14 @@ const ProductSearchSection = () => {
                 />
                 <Select
                   options={brandOptions}
-                    value={filterBrand || ""} 
+                  value={filterBrand || ""} 
                   onChange={handleBrandChange}
                   placeholder="Марка"
                     className="lg:col-span-1"
                 />
                 <Select
                   options={modelOptions}
-                    value={filterModel || ""} 
+                  value={filterModel || ""} 
                   onChange={handleModelChange}
                   placeholder="Модель"
                     className="lg:col-span-1" 
@@ -704,16 +763,16 @@ const ProductSearchSection = () => {
                 />
                 <Select
                   options={modificationOptions}
-                    value={filterModification || ""} 
-                    onChange={handleModificationChange} 
+                  value={filterModification || ""} 
+                  onChange={handleModificationChange} 
                   placeholder="Модификация"
                     className="lg:col-span-1" 
                     disabled={!filterModel || modificationOptions.length <= 1} // Disable if no model or no options
                 />
                 <Button 
-                    label="Сбросить"
-                    onClick={handleResetFilters}
-                    className="w-full h-full lg:col-span-1 hover:text-black"
+                    label="Применить"
+                    onClick={handleApplyFilters}
+                    className="w-full py-3 lg:py-0 h-full lg:col-span-1 hover:text-black"
                     variant="noArrow2"
                 />
               </div>

@@ -89,7 +89,7 @@ const CatalogDropdownMenu: React.FC<CatalogDropdownMenuProps> = ({
     return (
       <Link
         key={category.id} 
-        href={`/catalog/${category.slug}`}
+        href={`/catalog?category=${category.slug}`}
         className="flex group items-center gap-5 py-3 px-6 focus:text-[#38AE34]"
         onClick={closeDropdown}
       >

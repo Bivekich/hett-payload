@@ -248,14 +248,17 @@ const Footer = () => {
                 2xl:text-base
                 xl:text-base
                 lg:text-sm
-                md:text-sm
-                max-md:text-xs roboto-condensed-regular"
+                md:text-base
+                sm:text-sm
+                text-sm
+              "
               >
+                {/* Map over the first half of categories */}
                 {categories.slice(0, Math.ceil(categories.length / 2)).map((category) => (
                   <Link
                     key={category.id}
-                    href={`/catalog/${category.slug}`}
-                    className="hover:text-[#38AE34] transition-colors cursor-pointer"
+                    href={`/catalog?category=${category.slug}`} // Use query parameter
+                    className="hover:text-white transition-colors"
                     onClick={handleNavigation}
                   >
                     {category.name}
@@ -265,21 +268,23 @@ const Footer = () => {
             </div>
 
             {/* Second Categories Column */}
-            <div className="flex flex-col">
-          <div className="md:py-2"/>
+            <div className="flex flex-col sm:mt-[56px] md:mt-[64px]"> {/* Add margin top to align with first column items */}
               <nav
-                className="flex flex-col gap-y-3 md:gap-y-4 mt-6 md:mt-8 leading-snug text-gray-400
+                className="flex flex-col gap-y-3 md:gap-y-4 leading-snug text-gray-400
                 2xl:text-base
                 xl:text-base
                 lg:text-sm
-                md:text-sm
-                max-md:text-xs roboto-condensed-regular"
+                md:text-base
+                sm:text-sm
+                text-sm
+              "
               >
+                {/* Map over the second half of categories */}
                 {categories.slice(Math.ceil(categories.length / 2)).map((category) => (
                   <Link
                     key={category.id}
-                    href={`/catalog/${category.slug}`}
-                    className="hover:text-[#38AE34] transition-colors cursor-pointer"
+                    href={`/catalog?category=${category.slug}`} // Use query parameter
+                    className="hover:text-white transition-colors"
                     onClick={handleNavigation}
                   >
                     {category.name}
