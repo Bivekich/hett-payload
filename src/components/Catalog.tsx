@@ -656,6 +656,11 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     if (filterBrand) newQueryParams.set('brand', filterBrand);
     if (filterModel) newQueryParams.set('model', filterModel);
     if (filterModification) newQueryParams.set('modification', filterModification);
+    
+    // ALSO include the search parameter from the current URL
+    if (currentSearchFromUrl) {
+      newQueryParams.set('search', currentSearchFromUrl);
+    }
 
     const newQueryString = newQueryParams.toString();
     const currentQueryString = searchParams.toString(); 

@@ -330,7 +330,7 @@ export default function Header() {
       // Get current parameters from the URL
       const currentParams = new URLSearchParams(searchParams.toString());
       // Set/update the search parameter
-      currentParams.set('search', searchQuery.trim().toLowerCase()); 
+      currentParams.set('search', searchQuery.trim()); 
       // Build the final query string
       const queryString = currentParams.toString();
       // Navigate with combined parameters
