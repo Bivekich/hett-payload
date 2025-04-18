@@ -627,13 +627,10 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   useEffect(() => {
     // Wait for metadata AND initial sync from URL to complete
     if (!metadataLoaded || !isInitialSyncComplete) {
-      // console.log("Effect 2: Skipping URL update (pre-sync)");
       return; 
     }
 
-    // console.log("Effect 2: Checking if URL needs update based on state");
     const newQueryParams = new URLSearchParams();
-    const currentSearchFromUrl = searchParams.get('search'); 
 
     // Build query params from the current FILTER state
     if (filterCategory) newQueryParams.set('category', filterCategory);
@@ -656,27 +653,21 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     if (filterBrand) newQueryParams.set('brand', filterBrand);
     if (filterModel) newQueryParams.set('model', filterModel);
     if (filterModification) newQueryParams.set('modification', filterModification);
+    if (searchQuery) newQueryParams.set('search', searchQuery);
 
     const newQueryString = newQueryParams.toString();
-    const currentQueryString = searchParams.toString(); 
-
-    if (newQueryString !== currentQueryString) {
-      // console.log(`Effect 2: Updating URL. Current='${currentQueryString}', New='${newQueryString}'`);
-      router.push(`${pathname}${newQueryString ? '?' + newQueryString : ''}`, { scroll: false });
-    } else {
-      // console.log("Effect 2: No URL update needed (state matches URL)");
-    }
+    router.push(`${pathname}${newQueryString ? '?' + newQueryString : ''}`, { scroll: false });
 
   }, [
-    // Depend on filter states AND the sync flag
+    // Depend only on filter states and the sync flag
     filterCategory, 
     filterSubcategory, 
     filterThirdSubcategory, 
     filterBrand, 
     filterModel, 
-    filterModification, 
-    isInitialSyncComplete, // Add flag dependency
-    // Keep others needed for the effect execution
+    filterModification,
+    searchQuery,
+    isInitialSyncComplete,
     metadataLoaded, 
     router,         
     pathname
