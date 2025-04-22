@@ -56,11 +56,11 @@ const ImageZoom: React.FC<ImageZoomProps> = ({
           onClick={() => setIsModalOpen(false)}
         >
           <div
-            className="relative max-w-[90vw] max-h-[90vh] bg-white p-4"
+            className="relative w-[90vw] h-[90vw] md:w-[70vw] md:h-[70vw] lg:w-[50vw] lg:h-[50vw] bg-white p-4 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className="absolute -top-12 right-0 text-white hover:text-[#38AE34] transition-colors p-2"
+              className="absolute top-2 right-2 z-10 text-[#38AE34] bg-white/60 rounded-full hover:bg-white/90 hover:text-black transition-colors p-1"
               onClick={() => setIsModalOpen(false)}
             >
               <svg
@@ -83,7 +83,7 @@ const ImageZoom: React.FC<ImageZoomProps> = ({
             <Image
               src={src}
               alt={alt}
-              className="max-h-[85vh] w-auto object-contain"
+              className="h-full w-full object-contain"
               width={1200}
               height={1200}
               unoptimized={unoptimized}
