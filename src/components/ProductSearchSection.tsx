@@ -99,6 +99,7 @@ const ProductSearchSection = () => {
   const [metadataLoaded, setMetadataLoaded] = useState<boolean>(false);
   const [isFetchingFilterOptions, setIsFetchingFilterOptions] =
     useState<boolean>(false);
+  const [isClient, setIsClient] = useState(false);
 
   // State for category cards
   const [categoryCards, setCategoryCards] = useState<CategoryCardData[]>([]);
@@ -232,6 +233,11 @@ const ProductSearchSection = () => {
     fetchMetadata();
   }, []);
   // --- End Refactored Initial Metadata Fetch ---
+
+  // --- Add Effect to track client mount ---
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // --- Add fetchProducts Function (Copied & Adapted from Catalog.tsx) ---
   const fetchProducts = useCallback(
@@ -860,68 +866,70 @@ const ProductSearchSection = () => {
               </div>
 
               {/* Search section */}
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-4">
-                <Select
-                  options={categoryOptions}
-                  value={filterCategory || ""}
-                  onChange={handleCategoryChange}
-                  placeholder="Категория"
-                  className="lg:col-span-1"
-                />
-                <Select
-                  options={subcategoryOptions}
-                  value={
-                    filterSubcategory ? filterSubcategory.id.toString() : ""
-                  }
-                  onChange={handleSubcategoryChange}
-                  placeholder="Подкатегория"
-                  className="lg:col-span-1"
-                  disabled={!filterCategory || subcategoryOptions.length <= 1} // Disable if no category or no options
-                />
-                <Select
-                  options={thirdSubcategoryOptions}
-                  value={
-                    filterThirdSubcategory
-                      ? filterThirdSubcategory.id.toString()
-                      : ""
-                  }
-                  onChange={handleThirdSubcategoryChange}
-                  placeholder="Раздел"
-                  className="lg:col-span-1"
-                  disabled={
-                    !filterSubcategory || thirdSubcategoryOptions.length <= 1
-                  } // Disable if no subcat or no options
-                />
-                <Select
-                  options={brandOptions}
-                  value={filterBrand || ""}
-                  onChange={handleBrandChange}
-                  placeholder="Марка"
-                  className="lg:col-span-1"
-                />
-                <Select
-                  options={modelOptions}
-                  value={filterModel || ""}
-                  onChange={handleModelChange}
-                  placeholder="Модель"
-                  className="lg:col-span-1"
-                  disabled={!filterBrand || modelOptions.length <= 1} // Disable if no brand or no options
-                />
-                <Select
-                  options={modificationOptions}
-                  value={filterModification || ""}
-                  onChange={handleModificationChange}
-                  placeholder="Модификация"
-                  className="lg:col-span-1"
-                  disabled={!filterModel || modificationOptions.length <= 1} // Disable if no model or no options
-                />
-                <Button
-                  label="Применить"
-                  onClick={handleApplyFilters}
-                  className="w-full py-3 lg:py-0 h-full lg:col-span-1 hover:text-black"
-                  variant="noArrow2"
-                />
-              </div>
+              {isClient && (
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-4">
+                  <Select
+                    options={categoryOptions}
+                    value={filterCategory || ""}
+                    onChange={handleCategoryChange}
+                    placeholder="Категория"
+                    className="lg:col-span-1"
+                  />
+                  <Select
+                    options={subcategoryOptions}
+                    value={
+                      filterSubcategory ? filterSubcategory.id.toString() : ""
+                    }
+                    onChange={handleSubcategoryChange}
+                    placeholder="Подкатегория"
+                    className="lg:col-span-1"
+                    disabled={!filterCategory || subcategoryOptions.length <= 1} // Disable if no category or no options
+                  />
+                  <Select
+                    options={thirdSubcategoryOptions}
+                    value={
+                      filterThirdSubcategory
+                        ? filterThirdSubcategory.id.toString()
+                        : ""
+                    }
+                    onChange={handleThirdSubcategoryChange}
+                    placeholder="Раздел"
+                    className="lg:col-span-1"
+                    disabled={
+                      !filterSubcategory || thirdSubcategoryOptions.length <= 1
+                    } // Disable if no subcat or no options
+                  />
+                  <Select
+                    options={brandOptions}
+                    value={filterBrand || ""}
+                    onChange={handleBrandChange}
+                    placeholder="Марка"
+                    className="lg:col-span-1"
+                  />
+                  <Select
+                    options={modelOptions}
+                    value={filterModel || ""}
+                    onChange={handleModelChange}
+                    placeholder="Модель"
+                    className="lg:col-span-1"
+                    disabled={!filterBrand || modelOptions.length <= 1} // Disable if no brand or no options
+                  />
+                  <Select
+                    options={modificationOptions}
+                    value={filterModification || ""}
+                    onChange={handleModificationChange}
+                    placeholder="Модификация"
+                    className="lg:col-span-1"
+                    disabled={!filterModel || modificationOptions.length <= 1} // Disable if no model or no options
+                  />
+                  <Button
+                    label="Применить"
+                    onClick={handleApplyFilters}
+                    className="w-full py-3 lg:py-0 h-full lg:col-span-1 hover:text-black"
+                    variant="noArrow2"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Mobile VIN request button */}

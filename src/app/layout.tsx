@@ -37,7 +37,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <Header />
         </Suspense>
-        <main className="flex-1 mt-[180px] md:mt-[160px]">{children}</main>
+        <main className="flex-1 mt-[140px] md:mt-[160px]">{children}</main>
         <Footer />
       </body>
     </html>

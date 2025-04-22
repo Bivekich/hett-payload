@@ -78,158 +78,104 @@ function MobileMenu({
   categories,
 }: MobileMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [showCatalogSubmenu, setShowCatalogSubmenu] = useState(false);
-  const [showAboutSubmenu, setShowAboutSubmenu] = useState(false);
 
   const handleNavigation = () => {
     onClose();
-  };
-
-  const toggleCatalogSubmenu = () => {
-    setShowCatalogSubmenu(!showCatalogSubmenu);
-  };
-
-  const toggleAboutSubmenu = () => {
-    setShowAboutSubmenu(!showAboutSubmenu);
   };
 
   return (
     <div
       ref={menuRef}
       className={`
-        fixed top-0 left-0 w-full h-screen bg-black 
+        fixed left-0 right-0 bg-white 
         transform transition-all duration-300 ease-in-out
-        ${isOpen ? "translate-y-0" : "-translate-y-full"}
+        ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"}
+        top-[140px]
         md:hidden
-        z-50
+        z-40
+        h-auto
+        max-h-[calc(100vh-140px)]
+        overflow-y-auto
+        shadow-lg
       `}
     >
-      <nav className="flex flex-col items-center justify-center h-full p-4">
-        {/* About Company with Submenu */}
-        <div className="w-full flex flex-col items-center">
-          <button
-            className="py-6 text-white hover:text-[#38AE34] transition-colors cursor-pointer text-[16px] font-bold uppercase roboto-condensed-bold flex items-center gap-2"
-            onClick={toggleAboutSubmenu}
+      <nav className="flex flex-col p-5 pb-30">
+        <Link
+          href="/about"
+          className="pb-4 text-[#555555] hover:text-[#38AE34] transition-colors text-[16px] font-bold uppercase roboto-condensed-bold"
+          onClick={() => handleNavigation()}
+        >
+          О КОМПАНИИ HETT AUTOMOTIVE
+        </Link>
+        {customPages.map((page) => (
+          <Link
+            key={page.id}
+            href={`/pages/${page.slug}/${page.id}`}
+            className="pb-4 text-[#555555] hover:text-[#38AE34] transition-colors text-[16px] font-bold uppercase roboto-condensed-bold"
+            onClick={() => handleNavigation()}
           >
-            О компании Hett Automotive
-            <svg
-              width="10"
-              height="5"
-              viewBox="0 0 10 5"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className={`transform transition-transform ${
-                showAboutSubmenu ? "rotate-180" : ""
-              }`}
-            >
-              <path d="M0 0L5 5L10 0H0Z" fill="currentColor" />
-            </svg>
-          </button>
-
-          {showAboutSubmenu && (
-            <div className="flex flex-col w-full items-center">
-              <Link
-                href="/about"
-                className="py-3 text-[#38AE34] hover:text-white transition-colors cursor-pointer text-[14px] font-medium roboto-condensed-medium"
-                onClick={() => handleNavigation()}
-              >
-                О компании
-              </Link>
-              {customPages.map((page) => (
-                <Link
-                  key={page.id}
-                  href={`/pages/${page.slug}/${page.id}`}
-                  className="py-3 text-[#38AE34] hover:text-white transition-colors cursor-pointer text-[14px] font-medium roboto-condensed-medium"
-                  onClick={() => handleNavigation()}
-                >
-                  {page.title}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Catalog Link with Submenu */}
-        <div className="w-full flex flex-col items-center">
-          <button
-            className="py-6 text-white hover:text-[#38AE34] transition-colors cursor-pointer text-[16px] font-bold uppercase roboto-condensed-bold flex items-center gap-2"
-            onClick={toggleCatalogSubmenu}
-          >
-            Каталог
-            <svg
-              width="10"
-              height="5"
-              viewBox="0 0 10 5"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className={`transform transition-transform ${
-                showCatalogSubmenu ? "rotate-180" : ""
-              }`}
-            >
-              <path d="M0 0L5 5L10 0H0Z" fill="currentColor" />
-            </svg>
-          </button>
-
-          {showCatalogSubmenu && (
-            <div className="flex flex-col w-full items-center space-y-2">
-              {categories.length > 0 ? (
-                categories.map((category) => (
-                  <Link
-                    key={category.id}
-                    href={`/catalog/${category.slug}`}
-                    className="py-3 w-full text-center text-[#38AE34] hover:text-white transition-colors cursor-pointer text-[14px] font-medium roboto-condensed-medium"
-                    onClick={() => handleNavigation()}
-                  >
-                    {category.name}
-                  </Link>
-                ))
-              ) : (
-                <div className="py-3 text-white text-center">
-                  Загрузка категорий...
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+            {page.title}
+          </Link>
+        ))}
 
         <Link
           href="/news"
-          className="py-6 text-white hover:text-[#38AE34] transition-colors cursor-pointer text-xl font-bold uppercase roboto-condensed-bold"
+          className="pb-4 text-[#555555] hover:text-[#38AE34] transition-colors text-[16px] font-bold uppercase roboto-condensed-bold"
           onClick={() => handleNavigation()}
         >
-          Новости
+          НОВОСТИ
         </Link>
+
         <Link
           href="/contact"
-          className="py-6 text-white hover:text-[#38AE34] transition-colors cursor-pointer text-xl font-bold uppercase roboto-condensed-bold"
+          className="pb-4 text-[#555555] hover:text-[#38AE34] transition-colors text-[16px] font-bold uppercase roboto-condensed-bold"
           onClick={() => handleNavigation()}
         >
-          Контакты
+          КОНТАКТЫ
         </Link>
+
+       
       </nav>
 
-      {/* Close button */}
-      <button
-        onClick={onClose}
-        className="absolute top-6 right-6 text-white hover:text-[#38AE34] transition-colors"
-        aria-label="Close menu"
-      >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
+      {/* Contact info at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 p-5 flex flex-row w-full justify-between">
+        <a
+          href="tel:+74952602060"
+          className="block text-[#555555] text-[18px] font-bold roboto-condensed-bold mb-4"
         >
-          <path
-            d="M18 6L6 18M6 6L18 18"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
+          +7 (495) 260 20 60
+        </a>
+        <div className="flex gap-4">
+          <a
+            href="https://t.me/hettautomotive"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transform hover:scale-[1.1] transition-all"
+          >
+            <div className="w-5 aspect-square">
+              <Image
+                src={TelegramIcon}
+                alt="Telegram"
+                className="w-full h-full transition-all"
+              />
+            </div>
+          </a>
+          <a
+            href="https://wa.me/74952602060"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transform hover:scale-[1.1] transition-all"
+          >
+            <div className="w-5 aspect-square">
+              <Image
+                src={WhatsAppIcon}
+                alt="WhatsApp"
+                className="w-full h-full transition-all"
+              />
+            </div>
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
@@ -239,6 +185,7 @@ export default function Header() {
   const searchParams = useSearchParams();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileCatalogOpen, setIsMobileCatalogOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isScrolled, setIsScrolled] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -322,15 +269,6 @@ export default function Header() {
     fetchCategories();
   }, []);
 
-  // Transform custom pages into menu items format and include about page
-  const aboutMenuItems = [
-    { text: "О компании", href: "/about" },
-    ...customPages.map((page) => ({
-      text: page.title,
-      href: `/pages/${page.slug}/${page.id}`,
-    })),
-  ];
-
   // Simplify search input change handler
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -373,7 +311,9 @@ export default function Header() {
     <header
       ref={headerRef}
       className={`w-full bg-white fixed top-0 left-0 right-0 z-[999] transition-all duration-300 ${
-        isScrolled ? "h-[80px] md:h-[100px]" : "h-[180px] md:h-[160px]"
+        isScrolled ? "md:h-[140px] lg:h-[100px]" : "md:h-[200px] lg:h-[160px]"
+      } ${
+        isMobileSearchOpen ? "h-[200px] bg-white" : "h-[140px] md:bg-white bg-transparent"
       }`}
     >
       <div className="max-w-[1280px] mx-auto px-4 md:px-6">
@@ -431,7 +371,10 @@ export default function Header() {
                   {customPages.length > 0 ? (
                     <DropdownMenu
                       title="О компании Hett Automotive"
-                      items={aboutMenuItems}
+                      items={customPages.map((page) => ({
+                        text: page.title,
+                        href: `/pages/${page.slug}/${page.id}`,
+                      }))}
                     />
                   ) : (
                     <Link
@@ -610,43 +553,17 @@ export default function Header() {
                 src={logo}
                 alt="Логотип Hett Automotive"
                 className="object-contain"
-                width={140}
-                height={30}
+                width={170}
+                height={50}
               />
             </Link>
 
             {/* Mobile Actions */}
             <div className="flex items-center gap-2">
-              {/* Catalog Button */}
-              {/* <button
-                className="flex items-center bg-[#38AE34] text-white px-4 py-2 uppercase font-bold roboto-condensed-bold text-sm"
-                onClick={() => {
-                  if (isMobileMenuOpen) {
-                    setIsMobileMenuOpen(false);
-                  }
-                  setIsMobileCatalogOpen(!isMobileCatalogOpen);
-                }}
-              >
-                <svg
-                  width="18"
-                  height="12"
-                  viewBox="0 0 18 12"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="mr-2"
-                >
-                  <path
-                    d="M0 0H18V2H0V0ZM0 5H18V7H0V5ZM0 10H18V12H0V10Z"
-                    fill="currentColor"
-                  />
-                </svg>
-                Каталог
-              </button> */}
-
               {/* Search Icon - Appears when scrolled on mobile */}
               <button
                 onClick={() => setIsScrolled(false)}
-                className={`transition-all duration-300 transform ${
+                className={`hidden md:block transition-all duration-300 transform ${
                   isScrolled
                     ? "opacity-100 scale-100 pointer-events-auto"
                     : "opacity-0 scale-95 pointer-events-none"
@@ -663,7 +580,7 @@ export default function Header() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="text-[#555555] hover:text-[#38AE34] transition-colors"
+                  className="text-[#555555] hover:text-[#38AE34] transition-colors "
                 >
                   <circle cx="11" cy="11" r="8"></circle>
                   <path d="m21 21-4.3-4.3"></path>
@@ -672,9 +589,14 @@ export default function Header() {
 
               {/* Menu Button */}
               <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="flex items-center text-gray-600 px-2"
+                onClick={() => {
+                  setIsMobileMenuOpen(!isMobileMenuOpen);
+                  setIsMobileSearchOpen(false);
+                  setIsMobileCatalogOpen(false);
+                }}
+                className="flex flex-row-reverse font-medium items-center text-gray-600 px-2 gap-2"
               >
+                МЕНЮ
                 <div className="flex flex-col gap-1">
                   <div className="w-5 h-0.5 bg-[#555555]"></div>
                   <div className="w-5 h-0.5 bg-[#555555]"></div>
@@ -684,14 +606,125 @@ export default function Header() {
             </div>
           </div>
 
-          {/* Mobile Search and VIN - Hidden when scrolled */}
+          <div className="flex flex-row justify-between mt-4 h-[40px] items-center">
+            <div className="flex flex-row justify-between w-full">
+              <button
+                className="flex items-center bg-[#38AE34] px-4 border border-[#38AE34] text-white uppercase font-bold roboto-condensed-bold text-sm"
+                onClick={() => {
+                  if (isMobileMenuOpen) {
+                    setIsMobileMenuOpen(false);
+                  }
+                  setIsMobileSearchOpen(false);
+                  setIsMobileCatalogOpen(!isMobileCatalogOpen);
+                }}
+              >
+                <svg
+                  width="18"
+                  height="40px"
+                  viewBox="0 0 18 12"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="mr-2"
+                >
+                  <path
+                    d="M0 0H18V2H0V0ZM0 5H18V7H0V5ZM0 10H18V12H0V10Z"
+                    fill="currentColor"
+                  />
+                </svg>
+                Каталог
+              </button>  
+              {/* VIN Request for Mobile */}
+              <div className="">
+                <Button
+                  label="Запрос по VIN"
+                  variant="noArrow"
+                  className="w-[115px]"
+                  onClick={() => setIsVinModalOpen(true)}
+                />
+              </div>
+            </div>
+            {/*Search icon for mobile*/}
+            <div className="w-[116px] flex justify-end">
+              <div 
+                className={`h-[42px] w-[42px] flex justify-center items-center border cursor-pointer transition-colors ${
+                  isMobileSearchOpen ? "border-[#38AE34]" : "border-[#8898A4] hover:border-[#38AE34]"
+                }`}
+                onClick={() => {
+                  setIsMobileSearchOpen(!isMobileSearchOpen);
+                  setIsMobileMenuOpen(false);
+                  setIsMobileCatalogOpen(false);
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`transition-colors w-5 aspect-square ${
+                    isMobileSearchOpen ? "text-[#38AE34]" : "text-[#555555]"
+                  }`}
+                >
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.3-4.3"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Search - Shown when search icon is clicked */}
           <div
-            className={`transition-all duration-300 transform ${
-              isScrolled
-                ? "-translate-y-[25px] opacity-0 pointer-events-none h-0 mt-0"
-                : "translate-y-0 opacity-100 pointer-events-auto mt-4"
-            }`}
-          >
+           className={`transition-all duration-300 transform ${
+             isMobileSearchOpen ? "translate-y-0 opacity-100 pointer-events-auto mt-4" : "-translate-y-1 opacity-0 pointer-events-none h-0 mt-0"
+           }`}
+         >
+           {/* Mobile Search */}
+           <div ref={searchRef} className="relative w-full">
+             <div className="flex items-center gap-2">
+               <div className="flex-1 border border-[#8898A4] hover:border-[#38AE34] focus-within:border-[#38AE34] transition-colors group h-10 max-w-[1060px]">
+                 <div className="flex gap-2.5 items-center px-4 h-full">
+                   <svg
+                     xmlns="http://www.w3.org/2000/svg"
+                     width="20"
+                     height="20"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     strokeWidth="2.5"
+                     strokeLinecap="round"
+                     strokeLinejoin="round"
+                     className="text-[#555555] group-focus-within:text-[#38AE34] transition-colors w-5 aspect-square"
+                   >
+                     <circle cx="11" cy="11" r="8"></circle>
+                     <path d="m21 21-4.3-4.3"></path>
+                   </svg>
+                   <input
+                     type="text"
+                     value={searchQuery}
+                     onChange={handleSearchChange}
+                     onKeyDown={handleSearchKeyDown}
+                     placeholder="Поиск по названию, артикулу или OEM"
+                     className="flex-1 text-sm leading-relaxed outline-none roboto-condensed-regular placeholder:text-[#8898A4]"
+                   />
+                 </div>
+               </div>
+               <Button
+                 label="Найти"
+                 variant="noArrow2"
+                 onClick={handleSearchSubmit}
+                 className="px-2 max-w-[50px] hover:text-black"
+               />
+             </div>
+           </div>
+         </div>
+
+          {/* Remove the old scroll-based mobile search */}
+          {/* Mobile Search and VIN - Hidden when scrolled */}
+          <div className="hidden">
             {/* Mobile Search */}
             <div ref={searchRef} className="relative w-full">
               <div className="flex items-center gap-2">
@@ -730,16 +763,6 @@ export default function Header() {
                 />
               </div>
             </div>
-
-            {/* VIN Request for Mobile */}
-            <div className="mt-3">
-              <Button
-                label="Запросить по VIN"
-                variant="noArrow"
-                className="w-full border-none"
-                onClick={() => setIsVinModalOpen(true)}
-              />
-            </div>
           </div>
         </div>
       </div>
@@ -750,112 +773,87 @@ export default function Header() {
         onClose={() => setIsVinModalOpen(false)}
       />
 
-      {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <MobileMenu
-          isOpen={isMobileMenuOpen}
-          onClose={() => setIsMobileMenuOpen(false)}
-          customPages={customPages}
-          categories={categories}
-        />
-      )}
+      {/* Mobile Menu - Render unconditionally, control via isOpen prop */}
+      <MobileMenu 
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        customPages={customPages}
+        categories={categories}
+      />
 
       {/* Mobile Catalog Dropdown */}
-      {isMobileCatalogOpen && (
-        <div className="fixed top-0 left-0 right-0 bg-white shadow-lg z-50 p-6 md:hidden max-h-[90vh] overflow-y-auto">
-          {/* Close button */}
-          <button
-            onClick={() => setIsMobileCatalogOpen(false)}
-            className="absolute top-4 right-4 text-gray-500 hover:text-[#38AE34] transition-colors"
-            aria-label="Close catalog menu"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M18 6L6 18M6 6L18 18"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+      <div
+        className={`
+          fixed left-0 right-0 bg-white 
+          transform transition-all duration-300 ease-in-out
+          ${isMobileCatalogOpen ? "opacity-100 visible" : "opacity-0 invisible"}
+          top-[140px]
+          md:hidden
+          z-40
+          h-auto
+          max-h-[calc(100vh-140px)]
+          overflow-y-auto
+          shadow-lg
+        `}
+      >
+        <div className="flex flex-col gap-3 p-5">
+          {categories.length > 0 ? (
+            categories.map((category) => (
+              <Link
+                key={category.id}
+                href={`/catalog?category=${category.slug}`}
+                className="flex items-center py-2 w-full hover:bg-gray-50 transition-colors overflow-hidden"
+                onClick={() => setIsMobileCatalogOpen(false)}
+              >
+                {/* Compact image thumbnail */}
+                <div className="w-12 h-12 mr-3 overflow-hidden flex-shrink-0">
+                  {category.image?.url ? (
+                    <Image
+                      src={
+                        category.image.url.startsWith("/")
+                          ? `${API_URL}${category.image.url}`
+                          : category.image.url
+                      }
+                      alt={category.name}
+                      className="w-full h-full object-cover"
+                      width={48}
+                      height={48}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center ">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="text-gray-300"
+                      >
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                        <circle cx="9" cy="9" r="2"></circle>
+                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                      </svg>
+                    </div>
+                  )}
+                </div>
 
-          <h3 className="text-[#555555] font-bold text-lg uppercase roboto-condensed-bold mb-4">
-            Категории
-          </h3>
-
-          <div className="flex flex-col gap-3 max-w-[1280px] mx-auto">
-            {categories.length > 0 ? (
-              categories.map((category) => (
-                <Link
-                  key={category.id}
-                  href={`/catalog?category=${category.slug}`}
-                  className="flex items-center py-2 w-full hover:bg-gray-50 transition-colors rounded-md overflow-hidden"
-                  onClick={() => setIsMobileCatalogOpen(false)}
-                >
-                  {/* Compact image thumbnail */}
-                  <div className="w-12 h-12 mr-3 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
-                    {category.image?.url ? (
-                      <Image
-                        src={
-                          category.image.url.startsWith("/")
-                            ? `${API_URL}${category.image.url}`
-                            : category.image.url
-                        }
-                        alt={category.name}
-                        className="w-full h-full object-cover"
-                        width={48}
-                        height={48}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="text-gray-300"
-                        >
-                          <rect
-                            width="18"
-                            height="18"
-                            x="3"
-                            y="3"
-                            rx="2"
-                            ry="2"
-                          ></rect>
-                          <circle cx="9" cy="9" r="2"></circle>
-                          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Category name */}
-                  <span className="text-[#555555] hover:text-[#38AE34] transition-colors text-[14px] font-medium roboto-condensed-medium">
-                    {category.name}
-                  </span>
-                </Link>
-              ))
-            ) : (
-              <div className="py-3 text-gray-500 text-center">
-                Загрузка категорий...
-              </div>
-            )}
-          </div>
+                {/* Category name */}
+                <span className="text-[#555555] hover:text-[#38AE34] transition-colors text-[14px] font-medium roboto-condensed-medium">
+                  {category.name}
+                </span>
+              </Link>
+            ))
+          ) : (
+            <div className="py-3 text-gray-500 text-center">
+              Загрузка категорий...
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </header>
   );
 }
