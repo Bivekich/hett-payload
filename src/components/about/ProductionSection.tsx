@@ -1,7 +1,7 @@
 import React from "react";
-import Image from "next/image";
 import { lexicalToHtml } from "@/utils/lexicalToHtml";
 import { API_URL } from "@/services/api";
+import ImageZoom from "../uiKit/ImageZoom";
 
 // Define a type for lexical content
 interface LexicalContent {
@@ -49,17 +49,23 @@ const ProductionSection: React.FC<ProductionSectionProps> = ({
           )}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {images.map((image, index) => (
-            <div key={index} className="aspect-[4/3] relative">
-              <Image
-                src={image.url.startsWith('/') ? `${API_URL}${image.url}` : image.url}
-                alt={image.alt || 'Production image'}
-                fill
-                className="object-cover rounded-sm"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              />
-            </div>
-          ))}
+          {images.map((image, index) => {
+            const imageUrl = image.url.startsWith("/")
+              ? `${API_URL}${image.url}`
+              : image.url;
+
+            return (
+              <div key={index} className="aspect-[4/3] relative">
+                <ImageZoom
+                  src={imageUrl}
+                  alt={image.alt || "Production image"}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

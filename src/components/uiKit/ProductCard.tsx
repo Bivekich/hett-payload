@@ -47,7 +47,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({
   model,
 }) => {
   // Format brand for display (join if array)
-  const displayBrand = Array.isArray(brand) ? brand.join(', ') : brand;
+  const displayBrand = Array.isArray(brand) ? brand.join(", ") : brand;
 
   return (
     <div className="flex justify-between w-full text-sm font-[Roboto_Condensed]">
@@ -76,7 +76,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   let imageUrl = product?.attributes?.image?.data?.attributes?.url;
 
   // Make URL absolute if it's relative
-  if (imageUrl && imageUrl.startsWith('/')) {
+  if (imageUrl && imageUrl.startsWith("/")) {
     imageUrl = `${API_URL}${imageUrl}`;
   }
 
@@ -88,7 +88,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Only navigate if the click wasn't on the button
-    if (!(e.target as HTMLElement).closest('.card-button')) {
+    if (!(e.target as HTMLElement).closest(".card-button")) {
       router.push(`/catalog/product/${slug}`);
     }
   };
@@ -102,16 +102,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       onClick={handleCardClick}
     >
       {/* Fixed height container for consistent image size */}
-      <div className="flex items-center justify-center h-[200px] p-4 relative">
+      <div className="flex items-center justify-center h-[210px] p-4relative">
         {hasRealImage ? (
           <Image
             src={imageUrl}
             alt={name}
-            className="object-contain"
+            className="object-contain pt-7"
             width={250}
             height={200}
-            style={{ objectFit: 'contain' }}
-            unoptimized={!imageUrl.startsWith('/')}
+            style={{ objectFit: "contain" }}
+            unoptimized={!imageUrl.startsWith("/")}
           />
         ) : (
           <Image
@@ -119,7 +119,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             alt="No image available"
             width={250}
             height={200}
-            className="object-contain pt-10 pb-4"
+            className="object-contain pt-11 pb-4"
             priority
           />
         )}

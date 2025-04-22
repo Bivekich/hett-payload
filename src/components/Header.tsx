@@ -71,7 +71,12 @@ interface SiteSettings {
   };
 }
 
-function MobileMenu({ isOpen, onClose, customPages, categories }: MobileMenuProps) {
+function MobileMenu({
+  isOpen,
+  onClose,
+  customPages,
+  categories,
+}: MobileMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [showCatalogSubmenu, setShowCatalogSubmenu] = useState(false);
   const [showAboutSubmenu, setShowAboutSubmenu] = useState(false);
@@ -167,16 +172,18 @@ function MobileMenu({ isOpen, onClose, customPages, categories }: MobileMenuProp
 
           {showCatalogSubmenu && (
             <div className="flex flex-col w-full items-center space-y-2">
-              {categories.length > 0 ? categories.map((category) => (
-                <Link
-                  key={category.id}
-                  href={`/catalog/${category.slug}`}
-                  className="py-3 w-full text-center text-[#38AE34] hover:text-white transition-colors cursor-pointer text-[14px] font-medium roboto-condensed-medium"
-                  onClick={() => handleNavigation()}
-                >
-                  {category.name}
-                </Link>
-              )) : (
+              {categories.length > 0 ? (
+                categories.map((category) => (
+                  <Link
+                    key={category.id}
+                    href={`/catalog/${category.slug}`}
+                    className="py-3 w-full text-center text-[#38AE34] hover:text-white transition-colors cursor-pointer text-[14px] font-medium roboto-condensed-medium"
+                    onClick={() => handleNavigation()}
+                  >
+                    {category.name}
+                  </Link>
+                ))
+              ) : (
                 <div className="py-3 text-white text-center">
                   Загрузка категорий...
                 </div>
@@ -239,12 +246,14 @@ export default function Header() {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [footerData, setFooterData] = useState<FooterData | null>(null);
   const [isVinModalOpen, setIsVinModalOpen] = useState(false);
-  const [customPages, setCustomPages] = useState<{ id: number; title: string; slug: string }[]>([]);
+  const [customPages, setCustomPages] = useState<
+    { id: number; title: string; slug: string }[]
+  >([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
   // Effect to sync searchQuery state with URL search param
   useEffect(() => {
-    const urlSearchQuery = searchParams.get('search');
+    const urlSearchQuery = searchParams.get("search");
     setSearchQuery(urlSearchQuery || "");
   }, [searchParams]);
 
@@ -254,8 +263,8 @@ export default function Header() {
       setIsScrolled(window.scrollY > 100);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Fetch site settings
@@ -264,13 +273,17 @@ export default function Header() {
       try {
         const settings = await getSettings();
         setSettings(settings);
-        
+
         // For backward compatibility, also set footerData
         if (settings?.header) {
           setFooterData({
             headerPhone: settings.header.phone,
-            telegramLink: settings.header.socialLinks?.find(link => link.platform === 'telegram')?.url,
-            whatsappLink: settings.header.socialLinks?.find(link => link.platform === 'whatsapp')?.url,
+            telegramLink: settings.header.socialLinks?.find(
+              (link) => link.platform === "telegram"
+            )?.url,
+            whatsappLink: settings.header.socialLinks?.find(
+              (link) => link.platform === "whatsapp"
+            )?.url,
           });
         }
       } catch (err) {
@@ -312,10 +325,10 @@ export default function Header() {
   // Transform custom pages into menu items format and include about page
   const aboutMenuItems = [
     { text: "О компании", href: "/about" },
-    ...customPages.map(page => ({
+    ...customPages.map((page) => ({
       text: page.title,
-      href: `/pages/${page.slug}/${page.id}`
-    }))
+      href: `/pages/${page.slug}/${page.id}`,
+    })),
   ];
 
   // Simplify search input change handler
@@ -330,7 +343,7 @@ export default function Header() {
       // Get current parameters from the URL
       const currentParams = new URLSearchParams(searchParams.toString());
       // Set/update the search parameter
-      currentParams.set('search', searchQuery.trim()); 
+      currentParams.set("search", searchQuery.trim());
       // Build the final query string
       const queryString = currentParams.toString();
       // Navigate with combined parameters
@@ -339,10 +352,10 @@ export default function Header() {
       // Optional: Handle case where search is empty but user clicks search
       // Maybe remove the search param if it exists?
       const currentParams = new URLSearchParams(searchParams.toString());
-      if (currentParams.has('search')) {
-        currentParams.delete('search');
+      if (currentParams.has("search")) {
+        currentParams.delete("search");
         const queryString = currentParams.toString();
-        router.push(`/catalog${queryString ? '?' + queryString : ''}`);
+        router.push(`/catalog${queryString ? "?" + queryString : ""}`);
       }
       // Or just do nothing if search is empty
     }
@@ -350,16 +363,19 @@ export default function Header() {
 
   // Handle keyboard events in the search input (for Enter key)
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleSearchSubmit();
     }
   };
 
   return (
-    <header ref={headerRef} className={`w-full bg-white fixed top-0 left-0 right-0 z-[999] transition-all duration-300 ${
-      isScrolled ? 'h-[80px] md:h-[100px]' : 'h-[180px] md:h-[160px]'
-    }`}>
+    <header
+      ref={headerRef}
+      className={`w-full bg-white fixed top-0 left-0 right-0 z-[999] transition-all duration-300 ${
+        isScrolled ? "h-[80px] md:h-[100px]" : "h-[180px] md:h-[160px]"
+      }`}
+    >
       <div className="max-w-[1280px] mx-auto px-4 md:px-6">
         {/* Desktop Header - Hidden on mobile */}
         <div className="hidden md:block">
@@ -383,12 +399,12 @@ export default function Header() {
               <CatalogDropdownMenu />
 
               {/* Search Icon - Appears when scrolled */}
-              <button 
+              <button
                 onClick={() => setIsScrolled(false)}
                 className={`transition-all duration-300 transform ${
-                  isScrolled 
-                    ? 'opacity-100 translate-x-0 pointer-events-auto' 
-                    : 'opacity-0 -translate-x-4 pointer-events-none'
+                  isScrolled
+                    ? "opacity-100 translate-x-0 pointer-events-auto"
+                    : "opacity-0 -translate-x-4 pointer-events-none"
                 } hover:text-[#38AE34]`}
                 aria-label="Open search"
               >
@@ -446,10 +462,16 @@ export default function Header() {
             {/* Right Side: Contact Info */}
             <div className="flex gap-10 items-center">
               <a
-                href={`tel:${settings?.header?.phone || footerData?.headerPhone || "+7 (495) 260 20 60"}`}
+                href={`tel:${
+                  settings?.header?.phone ||
+                  footerData?.headerPhone ||
+                  "+7 (495) 260 20 60"
+                }`}
                 className="text-base font-bold leading-relaxed uppercase text-[#555555] hover:text-[#38AE34] transition-colors"
               >
-                {settings?.header?.phone || footerData?.headerPhone || "+7 (495) 260 20 60"}
+                {settings?.header?.phone ||
+                  footerData?.headerPhone ||
+                  "+7 (495) 260 20 60"}
               </a>
               <div className="flex gap-4">
                 {/* Show all social links from the settings */}
@@ -478,12 +500,16 @@ export default function Header() {
                     </div>
                   </a>
                 ))}
-                
+
                 {/* Fallback for backward compatibility */}
-                {(!settings?.header?.socialLinks || settings.header.socialLinks.length === 0) && (
+                {(!settings?.header?.socialLinks ||
+                  settings.header.socialLinks.length === 0) && (
                   <>
                     <a
-                      href={footerData?.telegramLink || "https://t.me/hettautomotive"}
+                      href={
+                        footerData?.telegramLink ||
+                        "https://t.me/hettautomotive"
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                       className="transform hover:scale-[1.1] transition-all"
@@ -497,7 +523,9 @@ export default function Header() {
                       </div>
                     </a>
                     <a
-                      href={footerData?.whatsappLink || "https://wa.me/74952602060"}
+                      href={
+                        footerData?.whatsappLink || "https://wa.me/74952602060"
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                       className="transform hover:scale-[1.1] transition-all"
@@ -517,7 +545,13 @@ export default function Header() {
           </div>
 
           {/* Bottom Row: Search and VIN */}
-          <div className={`flex gap-5 w-full transition-all duration-300 transform ${isScrolled ? '-translate-y-[25px] opacity-0' : 'translate-y-0 opacity-100'} mb-5`}>
+          <div
+            className={`flex gap-5 w-full transition-all duration-300 transform ${
+              isScrolled
+                ? "-translate-y-[25px] opacity-0"
+                : "translate-y-0 opacity-100"
+            } mb-5`}
+          >
             {/* Search Bar */}
             <div ref={searchRef} className="flex-1 relative">
               <div className="flex items-center gap-2">
@@ -561,7 +595,7 @@ export default function Header() {
             <Button
               label="Запросить по VIN"
               variant="noArrow"
-              className="min-w-[200px] border-none"
+              className="max-w-[158px] border-none"
               onClick={() => setIsVinModalOpen(true)}
             />
           </div>
@@ -610,12 +644,12 @@ export default function Header() {
               </button> */}
 
               {/* Search Icon - Appears when scrolled on mobile */}
-              <button 
+              <button
                 onClick={() => setIsScrolled(false)}
                 className={`transition-all duration-300 transform ${
-                  isScrolled 
-                    ? 'opacity-100 scale-100 pointer-events-auto' 
-                    : 'opacity-0 scale-95 pointer-events-none'
+                  isScrolled
+                    ? "opacity-100 scale-100 pointer-events-auto"
+                    : "opacity-0 scale-95 pointer-events-none"
                 } hover:text-[#38AE34] p-2`}
                 aria-label="Open search"
               >
@@ -651,15 +685,17 @@ export default function Header() {
           </div>
 
           {/* Mobile Search and VIN - Hidden when scrolled */}
-          <div className={`transition-all duration-300 transform ${
-            isScrolled 
-              ? '-translate-y-[25px] opacity-0 pointer-events-none h-0 mt-0' 
-              : 'translate-y-0 opacity-100 pointer-events-auto mt-4'
-          }`}>
+          <div
+            className={`transition-all duration-300 transform ${
+              isScrolled
+                ? "-translate-y-[25px] opacity-0 pointer-events-none h-0 mt-0"
+                : "translate-y-0 opacity-100 pointer-events-auto mt-4"
+            }`}
+          >
             {/* Mobile Search */}
             <div ref={searchRef} className="relative w-full">
               <div className="flex items-center gap-2">
-                <div className="flex-1 border border-[#8898A4] hover:border-[#38AE34] focus-within:border-[#38AE34] transition-colors group h-10">
+                <div className="flex-1 border border-[#8898A4] hover:border-[#38AE34] focus-within:border-[#38AE34] transition-colors group h-10 max-w-[1060px]">
                   <div className="flex gap-2.5 items-center px-4 h-full">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -716,9 +752,9 @@ export default function Header() {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <MobileMenu 
-          isOpen={isMobileMenuOpen} 
-          onClose={() => setIsMobileMenuOpen(false)} 
+        <MobileMenu
+          isOpen={isMobileMenuOpen}
+          onClose={() => setIsMobileMenuOpen(false)}
           customPages={customPages}
           categories={categories}
         />
@@ -749,44 +785,70 @@ export default function Header() {
               />
             </svg>
           </button>
-          
-          <h3 className="text-[#555555] font-bold text-lg uppercase roboto-condensed-bold mb-4">Категории</h3>
-          
-          <div className="flex flex-col gap-3 max-w-[1280px] mx-auto">
-            {categories.length > 0 ? categories.map((category) => (
-              <Link
-                key={category.id}
-                href={`/catalog?category=${category.slug}`}
-                className="flex items-center py-2 w-full hover:bg-gray-50 transition-colors rounded-md overflow-hidden"
-                onClick={() => setIsMobileCatalogOpen(false)}
-              >
-                {/* Compact image thumbnail */}
-                <div className="w-12 h-12 mr-3 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
-                  {category.image?.url ? (
-                    <Image 
-                      src={category.image.url.startsWith('/') ? `${API_URL}${category.image.url}` : category.image.url}
-                      alt={category.name}
-                      className="w-full h-full object-cover"
-                      width={48}
-                      height={48}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300">
-                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
-                        <circle cx="9" cy="9" r="2"></circle>
-                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
-                      </svg>
-                    </div>
-                  )}
-                </div>
 
-                {/* Category name */}
-                <span className="text-[#555555] hover:text-[#38AE34] transition-colors text-[14px] font-medium roboto-condensed-medium">
-                  {category.name}
-                </span>
-              </Link>
-            )) : (
+          <h3 className="text-[#555555] font-bold text-lg uppercase roboto-condensed-bold mb-4">
+            Категории
+          </h3>
+
+          <div className="flex flex-col gap-3 max-w-[1280px] mx-auto">
+            {categories.length > 0 ? (
+              categories.map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/catalog?category=${category.slug}`}
+                  className="flex items-center py-2 w-full hover:bg-gray-50 transition-colors rounded-md overflow-hidden"
+                  onClick={() => setIsMobileCatalogOpen(false)}
+                >
+                  {/* Compact image thumbnail */}
+                  <div className="w-12 h-12 mr-3 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                    {category.image?.url ? (
+                      <Image
+                        src={
+                          category.image.url.startsWith("/")
+                            ? `${API_URL}${category.image.url}`
+                            : category.image.url
+                        }
+                        alt={category.name}
+                        className="w-full h-full object-cover"
+                        width={48}
+                        height={48}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-gray-300"
+                        >
+                          <rect
+                            width="18"
+                            height="18"
+                            x="3"
+                            y="3"
+                            rx="2"
+                            ry="2"
+                          ></rect>
+                          <circle cx="9" cy="9" r="2"></circle>
+                          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Category name */}
+                  <span className="text-[#555555] hover:text-[#38AE34] transition-colors text-[14px] font-medium roboto-condensed-medium">
+                    {category.name}
+                  </span>
+                </Link>
+              ))
+            ) : (
               <div className="py-3 text-gray-500 text-center">
                 Загрузка категорий...
               </div>
@@ -801,10 +863,22 @@ export default function Header() {
 // Helper component for social icons
 const SocialIconComponent = ({ platform }: { platform: string }) => {
   switch (platform) {
-    case 'telegram':
-      return <Image src={TelegramIcon} alt="Telegram" className="w-full h-full transition-all" />;
-    case 'whatsapp':
-      return <Image src={WhatsAppIcon} alt="WhatsApp" className="w-full h-full transition-all" />;
+    case "telegram":
+      return (
+        <Image
+          src={TelegramIcon}
+          alt="Telegram"
+          className="w-full h-full transition-all"
+        />
+      );
+    case "whatsapp":
+      return (
+        <Image
+          src={WhatsAppIcon}
+          alt="WhatsApp"
+          className="w-full h-full transition-all"
+        />
+      );
     // Add more social media icons as needed
     default:
       return <div className="w-5 h-5 bg-gray-300 rounded-full"></div>;

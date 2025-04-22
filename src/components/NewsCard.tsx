@@ -23,7 +23,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
 
   return (
     <div
-      className={`flex flex-col grow text-base leading-snug ${bgColorClass} transition-all duration-300 h-full cursor-pointer`}
+      className={`flex flex-col grow text-base leading-snug ${bgColorClass} transition-all duration-300 h-full cursor-pointer p-8 hover:shadow-md`}
     >
       {imageUrl && (
         <div className="relative w-full h-[200px]">
@@ -40,9 +40,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
       )}
       <div className="py-4 flex flex-col justify-between h-full">
         <div>
-          <div className={`text-[16px] ${dateColorClass}`}>
-            {date}
-          </div>
+          <div className={`text-[16px] ${dateColorClass}`}>{date}</div>
           <div
             className={`mt-4 font-semibold leading-6 text-[16px] ${titleColorClass}`}
           >
