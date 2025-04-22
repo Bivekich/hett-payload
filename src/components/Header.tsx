@@ -371,10 +371,13 @@ export default function Header() {
                   {customPages.length > 0 ? (
                     <DropdownMenu
                       title="О компании Hett Automotive"
-                      items={customPages.map((page) => ({
-                        text: page.title,
-                        href: `/pages/${page.slug}/${page.id}`,
-                      }))}
+                      items={[
+                        { text: "О компании", href: "/about" },
+                        ...customPages.map((page) => ({
+                          text: page.title,
+                          href: `/pages/${page.slug}/${page.id}`,
+                        })),
+                      ]}
                     />
                   ) : (
                     <Link
