@@ -380,7 +380,7 @@ const Footer = () => {
           </div>
 
           {/* Bottom Section with Copyright and Legal Links */}
-          <div className="flex flex-wrap gap-x-8 gap-y-4 justify-between items-center w-full mt-10 pt-6 border-t border-gray-700 text-xs text-gray-400 font-[Roboto_Condensed]">
+          <div className="flex flex-wrap gap-x-8 gap-y-4 justify-between items-center w-full mt-10 pt-6 border-t border-gray-700 text-[16px] text-gray-400 font-[Roboto_Condensed]">
             <p>{footerData.copyright}</p>
             <div className="flex flex-wrap gap-x-6 gap-y-2">
               <Link href={footerData.termsOfUseLink || "#"} className="hover:text-[#38AE34] transition-colors">

@@ -850,7 +850,7 @@ const ProductSearchSection = () => {
                       label="Найти"
                       variant="noArrow2"
                       onClick={handleSearch}
-                      className="px-6 hover:text-black"
+                      className="px-6 w-[30px] md:w-auto hover:text-black "
                     />
                   </div>
                 </div>
@@ -865,63 +865,83 @@ const ProductSearchSection = () => {
                 </div>
               </div>
 
+              {/* Mobile VIN request button */}
+              <div className="lg:hidden">
+                <Button
+                  label="Запросить по VIN"
+                  variant="noArrow"
+                  className="flex justify-center items-center w-full"
+                  hideArrow
+                  onClick={openVinModal}
+                />
+              </div>
+
               {/* Search section */}
               {isClient && (
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-4">
-                  <Select
-                    options={categoryOptions}
-                    value={filterCategory || ""}
-                    onChange={handleCategoryChange}
-                    placeholder="Категория"
-                    className="lg:col-span-1"
-                  />
-                  <Select
-                    options={subcategoryOptions}
-                    value={
-                      filterSubcategory ? filterSubcategory.id.toString() : ""
-                    }
-                    onChange={handleSubcategoryChange}
-                    placeholder="Подкатегория"
-                    className="lg:col-span-1"
-                    disabled={!filterCategory || subcategoryOptions.length <= 1} // Disable if no category or no options
-                  />
-                  <Select
-                    options={thirdSubcategoryOptions}
-                    value={
-                      filterThirdSubcategory
-                        ? filterThirdSubcategory.id.toString()
-                        : ""
-                    }
-                    onChange={handleThirdSubcategoryChange}
-                    placeholder="Раздел"
-                    className="lg:col-span-1"
-                    disabled={
-                      !filterSubcategory || thirdSubcategoryOptions.length <= 1
-                    } // Disable if no subcat or no options
-                  />
-                  <Select
-                    options={brandOptions}
-                    value={filterBrand || ""}
-                    onChange={handleBrandChange}
-                    placeholder="Марка"
-                    className="lg:col-span-1"
-                  />
-                  <Select
-                    options={modelOptions}
-                    value={filterModel || ""}
-                    onChange={handleModelChange}
-                    placeholder="Модель"
-                    className="lg:col-span-1"
-                    disabled={!filterBrand || modelOptions.length <= 1} // Disable if no brand or no options
-                  />
-                  <Select
-                    options={modificationOptions}
-                    value={filterModification || ""}
-                    onChange={handleModificationChange}
-                    placeholder="Модификация"
-                    className="lg:col-span-1"
-                    disabled={!filterModel || modificationOptions.length <= 1} // Disable if no model or no options
-                  />
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-4">
+                  {/* First column on mobile: Taxonomy filters */}
+                  <div className="grid grid-cols-1 gap-4 md:contents">
+                    <Select
+                      options={categoryOptions}
+                      value={filterCategory || ""}
+                      onChange={handleCategoryChange}
+                      placeholder="Категория"
+                      className="lg:col-span-1"
+                    />
+                    <Select
+                      options={subcategoryOptions}
+                      value={
+                        filterSubcategory ? filterSubcategory.id.toString() : ""
+                      }
+                      onChange={handleSubcategoryChange}
+                      placeholder="Подкатегория"
+                      className="lg:col-span-1"
+                      disabled={!filterCategory || subcategoryOptions.length <= 1}
+                    />
+                    <Select
+                      options={thirdSubcategoryOptions}
+                      value={
+                        filterThirdSubcategory
+                          ? filterThirdSubcategory.id.toString()
+                          : ""
+                      }
+                      onChange={handleThirdSubcategoryChange}
+                      placeholder="Раздел"
+                      className="lg:col-span-1"
+                      disabled={
+                        !filterSubcategory || thirdSubcategoryOptions.length <= 1
+                      }
+                    />
+                  </div>
+
+                  {/* Second column on mobile: Vehicle filters */}
+                  <div className="grid grid-cols-1 gap-4 md:contents">
+                    <Select
+                      options={brandOptions}
+                      value={filterBrand || ""}
+                      onChange={handleBrandChange}
+                      placeholder="Марка"
+                      className="lg:col-span-1"
+                    />
+                    <Select
+                      options={modelOptions}
+                      value={filterModel || ""}
+                      onChange={handleModelChange}
+                      placeholder="Модель"
+                      className="lg:col-span-1"
+                      disabled={!filterBrand || modelOptions.length <= 1}
+                    />
+                    <Select
+                      options={modificationOptions}
+                      value={filterModification || ""}
+                      onChange={handleModificationChange}
+                      placeholder="Модификация"
+                      className="lg:col-span-1"
+                      disabled={!filterModel || modificationOptions.length <= 1}
+                    />
+                  </div>
+
+                  {/* Apply button - full width on mobile */}
                   <Button
                     label="Применить"
                     onClick={handleApplyFilters}
@@ -931,25 +951,41 @@ const ProductSearchSection = () => {
                 </div>
               )}
             </div>
-
-            {/* Mobile VIN request button */}
-            <div className="lg:hidden">
-              <Button
-                label="Запросить по VIN"
-                variant="noArrow"
-                className="flex justify-center items-center w-full border-none"
-                hideArrow
-                onClick={openVinModal}
-              />
-            </div>
           </div>
         </div>
 
         {/* VIN Request Modal */}
-        <VinRequestModal isOpen={isVinModalOpen} onClose={closeVinModal} />
+        <VinRequestModal isOpen={isVinModalOpen} onClose={closeVinModal}>
+          <div
+            className="relative w-[90vw] h-[90vw] md:w-[70vw] md:h-[70vw] lg:w-[50vw] lg:h-[50vw]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-4 right-4 z-10 bg-gray-50 hover:bg-gray-100 transition-colors p-2 w-10 h-10 flex items-center justify-center"
+              onClick={() => setIsVinModalOpen(false)}
+            >
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-6 h-6 text-gray-700"
+              >
+                <path
+                  d="M18 6L6 18M6 6L18 18"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </VinRequestModal>
 
         {/* Category cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
           {isMetadataLoading ? (
             // Show skeleton loaders for cards
             Array.from({ length: 5 }).map((_, index) => (

@@ -72,14 +72,19 @@ const buildQueryParams = (filters: CatalogFilters = {}): URLSearchParams => {
   
   // Handle complex search across multiple fields
   if (filters.search) {
-    const searchTerm = filters.search;
-    // Create an OR group for the search term across specified fields
-    queryParams.append('where[or][0][name][like]', searchTerm);
-    queryParams.append('where[or][1][oem][like]', searchTerm);
-    queryParams.append('where[or][2][article][like]', searchTerm);
-    queryParams.append('where[or][3][category.name][like]', searchTerm);
-    queryParams.append('where[or][4][subcategory.name][like]', searchTerm);
-    queryParams.append('where[or][5][thirdsubcategory.name][like]', searchTerm);
+    // Sanitize the search term: lowercase and remove common special chars
+    const sanitizedSearchTerm = filters.search
+      .toLowerCase() // Convert to lowercase
+      .replace(/[.,-\/#!$%\^&\*;:{}=\-_`~()\s\s+]/g, ''); // Remove common symbols and extra whitespace
+      // .replace(/\s+/g, ''); // Optional: remove all spaces if needed
+
+    // Create an OR group for the sanitized search term across specified fields
+    queryParams.append('where[or][0][name][like]', sanitizedSearchTerm);
+    queryParams.append('where[or][1][oem][like]', sanitizedSearchTerm);
+    queryParams.append('where[or][2][article][like]', sanitizedSearchTerm);
+    queryParams.append('where[or][3][category.name][like]', sanitizedSearchTerm);
+    queryParams.append('where[or][4][subcategory.name][like]', sanitizedSearchTerm);
+    queryParams.append('where[or][5][thirdsubcategory.name][like]', sanitizedSearchTerm);
   }
 
   return queryParams;

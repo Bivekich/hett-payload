@@ -133,6 +133,7 @@ const NewsSection = () => {
                       year: 'numeric'
                     })}
                     title={news.title}
+                    noPadding={true}
                   />
                 </Link>
               </div>

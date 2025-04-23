@@ -52,15 +52,15 @@ const ImageZoom: React.FC<ImageZoomProps> = ({
       {/* Image Modal/Lightbox */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center"
           onClick={() => setIsModalOpen(false)}
         >
           <div
-            className="relative w-[90vw] h-[90vw] md:w-[70vw] md:h-[70vw] lg:w-[50vw] lg:h-[50vw] bg-white p-4 shadow-xl"
+            className="relative w-[90vw] h-[90vw] md:w-[70vw] md:h-[70vw] lg:w-[50vw] lg:h-[50vw]"
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className="absolute top-2 right-2 z-10 text-[#38AE34] bg-white/60 rounded-full hover:bg-white/90 hover:text-black transition-colors p-1"
+              className="absolute top-4 right-4 z-10 text-white hover:text-[#38AE34] transition-colors p-1"
               onClick={() => setIsModalOpen(false)}
             >
               <svg

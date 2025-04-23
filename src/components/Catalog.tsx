@@ -906,86 +906,78 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
 
           
 
-          {/* Mobile filter toggle button */}
-          <div className="flex md:hidden mb-4">
-            <button
-              onClick={toggleMobileFilters}
-              className="flex items-center justify-center w-full p-3 bg-[#38AE34] text-white font-medium"
-            >
-              {showMobileFilters ? "Скрыть фильтры" : "Показать фильтры"}
-              <svg 
-                className={`ml-2 w-4 h-4 transition-transform ${showMobileFilters ? 'rotate-180' : ''}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-          </div>
+          {/* Mobile filter toggle button - REMOVED */}
 
           {/* Filters section */}
-          <div className={`mb-6 md:mb-8 ${showMobileFilters || 'hidden md:block'}`}>
-            <div className="grid grid-cols-1 md:grid-cols-7 gap-3 md:gap-5">
-              <Select
-                options={categoryOptions}
-                value={filterCategory || ""}
-                onChange={handleCategoryChange}
-                placeholder="Категория"
-                className="w-full"
-              />
-              
-              <Select
-                options={subcategoryOptions}
-                value={filterSubcategory ? filterSubcategory.id.toString() : ""}
-                onChange={handleSubcategoryChange}
-                placeholder="Подкатегория"
-                className="w-full"
-                disabled={!filterCategory}
-              />
+          <div className="mb-6 md:mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-7 gap-3 md:gap-5">
+              {/* First column on mobile: Taxonomy filters */}
+              <div className="grid grid-cols-1 gap-3 md:contents">
+                <Select
+                  options={categoryOptions}
+                  value={filterCategory || ""}
+                  onChange={handleCategoryChange}
+                  placeholder="Категория"
+                  className="w-full"
+                />
+                
+                <Select
+                  options={subcategoryOptions}
+                  value={filterSubcategory ? filterSubcategory.id.toString() : ""}
+                  onChange={handleSubcategoryChange}
+                  placeholder="Подкатегория"
+                  className="w-full"
+                  disabled={!filterCategory}
+                />
 
-              <Select
-                options={thirdSubcategoryOptions}
-                value={filterThirdSubcategory ? filterThirdSubcategory.id.toString() : ""}
-                onChange={handleThirdSubcategoryChange}
-                placeholder="Третья подкатегория"
-                className="w-full"
-                disabled={!filterSubcategory}
-              />
+                <Select
+                  options={thirdSubcategoryOptions}
+                  value={filterThirdSubcategory ? filterThirdSubcategory.id.toString() : ""}
+                  onChange={handleThirdSubcategoryChange}
+                  placeholder="Третья подкатегория"
+                  className="w-full"
+                  disabled={!filterSubcategory}
+                />
+              </div>
 
-              <Select
-                options={brandOptions}
-                value={filterBrand || ""}
-                onChange={handleBrandChange}
-                placeholder="Марка"
-                className="w-full"
-              />
+              {/* Second column on mobile: Vehicle filters */}
+              <div className="grid grid-cols-1 gap-3 md:contents">
+                <Select
+                  options={brandOptions}
+                  value={filterBrand || ""}
+                  onChange={handleBrandChange}
+                  placeholder="Марка"
+                  className="w-full"
+                />
 
-              <Select
-                options={modelOptions}
-                value={filterModel || ""}
-                onChange={handleModelChange}
-                placeholder="Модель"
-                className="w-full"
-                disabled={!filterBrand}
-              />
+                <Select
+                  options={modelOptions}
+                  value={filterModel || ""}
+                  onChange={handleModelChange}
+                  placeholder="Модель"
+                  className="w-full"
+                  disabled={!filterBrand}
+                />
 
-              <Select
-                options={modificationOptions}
-                value={filterModification || ""}
-                onChange={handleModificationChange}
-                placeholder="Модификация"
-                className="w-full"
-                disabled={!filterModel}
-              />
+                <Select
+                  options={modificationOptions}
+                  value={filterModification || ""}
+                  onChange={handleModificationChange}
+                  placeholder="Модификация"
+                  className="w-full"
+                  disabled={!filterModel}
+                />
+              </div>
 
-              <Button
-                label="Сбросить"
-                variant="noArrow2"
-                className="h-[42px] w-full hover:text-black"
-                onClick={handleResetFilters}
-              />
+              {/* Reset button - full width on mobile */}
+              <div className="col-span-2 md:col-span-1">
+                <Button
+                  label="Сбросить"
+                  variant="noArrow2"
+                  className="h-[42px] w-full hover:text-black"
+                  onClick={handleResetFilters}
+                />
+              </div>
             </div>
           </div>
 

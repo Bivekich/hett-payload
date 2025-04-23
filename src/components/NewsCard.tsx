@@ -6,6 +6,7 @@ interface NewsCardProps {
   date: string;
   title: string;
   variant?: "dark" | "white";
+  noPadding?: boolean;
 }
 
 const NewsCard: React.FC<NewsCardProps> = ({
@@ -13,6 +14,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
   date,
   title,
   variant = "dark",
+  noPadding = false,
 }) => {
   const bgColorClass = variant === "white" ? "bg-white" : "bg-transparent";
   const titleColorClass = variant === "white" ? "text-[#1E1E1E]" : "text-white";
@@ -21,9 +23,11 @@ const NewsCard: React.FC<NewsCardProps> = ({
   const readMoreColorClass =
     variant === "white" ? "text-[#38AE34]" : "text-[#38AE34]";
 
+  const paddingClass = noPadding ? '' : 'p-8';
+
   return (
     <div
-      className={`flex flex-col grow text-base leading-snug ${bgColorClass} transition-all duration-300 h-full cursor-pointer p-8 hover:shadow-md`}
+      className={`flex flex-col grow text-base leading-snug ${bgColorClass} ${paddingClass} transition-all duration-300 h-full cursor-pointer hover:shadow-md`}
     >
       {imageUrl && (
         <div className="relative w-full h-[200px]">

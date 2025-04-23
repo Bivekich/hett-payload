@@ -115,15 +115,15 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
       {/* Image Modal/Lightbox */}
       {isModalOpen && hasSelectedImage && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center"
           onClick={() => setIsModalOpen(false)}
         >
           <div
-            className="relative w-[90vw] h-[90vw] md:w-[70vw] md:h-[70vw] lg:w-[50vw] lg:h-[50vw] bg-white p-4 shadow-xl"
+            className="relative w-[90vw] h-[90vw] md:w-[70vw] md:h-[70vw] lg:w-[50vw] lg:h-[50vw]"
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className="absolute top-2 right-2 z-10 text-[#38AE34] bg-white/60 rounded-full hover:bg-white/90 hover:text-black transition-colors p-1"
+              className="absolute top-4 right-4 z-10 bg-gray-50 hover:bg-gray-100 transition-colors p-2 w-10 h-10 flex items-center justify-center"
               onClick={() => setIsModalOpen(false)}
             >
               <svg
@@ -132,7 +132,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                className="w-8 h-8"
+                className="w-6 h-6 text-gray-700"
               >
                 <path
                   d="M18 6L6 18M6 6L18 18"
