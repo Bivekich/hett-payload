@@ -829,22 +829,27 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
 
   // Reset filters handler - UPDATED
   const handleResetFilters = () => {
-    // setFormCategory(initialCategory || null); // Removed
-    setFilterCategory(initialCategory || null);
-    // setFormSubcategory(null); // Removed
-    setFilterSubcategory(null);
-    // setFormThirdSubcategory(null); // Removed
-    setFilterThirdSubcategory(null);
-    // setFormBrand(null); // Removed
-    setFilterBrand(null);
-    // setFormModel(null); // Removed
-    setFilterModel(null);
-    // setFormModification(null); // Removed
-    setFilterModification(null);
-    
-    setCurrentPage(1);
-    setShowMobileFilters(false);
-    router.push('/catalog', { scroll: false });
+    // ONLY update URL: Create new params object, remove all relevant keys
+    const params = new URLSearchParams(); // Start with an empty params object
+
+    // We don't need to read the old params, just navigate to the base path
+    // Keep any other unrelated params if necessary (though usually not for filters)
+    // const currentParams = new URLSearchParams(searchParams?.toString());
+    // currentParams.forEach((value, key) => {
+    //   if (!['category', 'subcategory', 'thirdsubcategory', 'brand', 'model', 'modification', 'page', 'search'].includes(key)) {
+    //     params.set(key, value);
+    //   }
+    // });
+
+    const queryString = params.toString(); // Will be empty in this simple case
+    console.log("handleResetFilters pushing clean URL:", `${pathname}${queryString ? `?${queryString}` : ''}`);
+    router.push(`${pathname}${queryString ? `?${queryString}` : ''}`); // Navigate to path without any filter/search params
+
+    // Close mobile filters if open
+    if (showMobileFilters) {
+      setShowMobileFilters(false);
+    }
+    // Let Effect 1 handle syncing the state from the new, clean URL
   };
 
   // Pagination handlers
