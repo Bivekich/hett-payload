@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Container from "./Container";
@@ -223,13 +223,19 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   const [filterModification, setFilterModification] = useState<string | null>(null);
   const [hasActiveSearch, setHasActiveSearch] = useState<boolean>(false);
   
+  // Ref to track the previous search query from URL
+  const prevSearchQueryRef = useRef<string | null>(null);
+  
   // Load all the metadata (categories, subcategories, brands, models, modifications)
   useEffect(() => {
     const fetchMetadata = async () => {
       try {
         setIsLoading(true);
         
-        // Fetch all metadata in parallel for better performance
+        // Define common filters for fetching ALL metadata
+        const allMetadataFilters: CatalogFilters = { limit: 1000 }; // Set high limit
+
+        // Fetch all metadata in parallel for better performance, passing the filters
         const [
           categoriesResponse, 
           subcategoriesResponse,
@@ -238,12 +244,12 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
           modelsResponse,
           modificationsResponse
         ] = await Promise.all([
-          getCategories(),
-          getSubcategories(),
-          getThirdSubcategories(),
-          getBrands(),
-          getModels(),
-          getModifications()
+          getCategories(allMetadataFilters),
+          getSubcategories(allMetadataFilters),
+          getThirdSubcategories(allMetadataFilters),
+          getBrands(allMetadataFilters),
+          getModels(allMetadataFilters),
+          getModifications(allMetadataFilters)
         ]);
         
         // Process the results
@@ -281,164 +287,250 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
   useEffect(() => {
     if (!metadataLoaded) return;
 
-    // 1. Filter based on available products (if any)
+    // Get current search query directly from params for this effect's logic
+    const currentSearchQuery = searchParams?.get('search') || '';
+    const isSearchActive = !!currentSearchQuery;
+    const hasSearchResults = cmsProducts.length > 0;
+
+    // 1. Extract IDs/Slugs from available products (always useful)
     const categoryIdsFromProducts = new Set<string>();
     const subcategoryIdsFromProducts = new Set<string>();
     const thirdSubcategoryIdsFromProducts = new Set<string>();
-    const brandIdsFromProducts = new Set<string>();
+    const brandIdsFromProducts = new Set<string>(); // Store Brand IDs
     const modelIdsFromProducts = new Set<string>();
     const modificationIdsFromProducts = new Set<string>();
 
-    if (cmsProducts.length > 0) {
-      cmsProducts.forEach(product => {
-        const categoryId = typeof product.category === 'object' ? product.category?.id?.toString() : typeof product.category === 'string' ? product.category : undefined;
-        const subcategoryId = typeof product.subcategory === 'object' ? product.subcategory?.id?.toString() : typeof product.subcategory === 'string' ? product.subcategory : undefined;
-        const thirdSubcategoryId = typeof product.thirdsubcategory === 'object' ? product.thirdsubcategory?.id?.toString() : typeof product.thirdsubcategory === 'string' ? product.thirdsubcategory : undefined;
+    cmsProducts.forEach(product => {
+      const categoryId = typeof product.category === 'object' ? product.category?.id?.toString() : typeof product.category === 'string' ? product.category : undefined;
+      const subcategoryId = typeof product.subcategory === 'object' ? product.subcategory?.id?.toString() : typeof product.subcategory === 'string' ? product.subcategory : undefined;
+      const thirdSubcategoryId = typeof product.thirdsubcategory === 'object' ? product.thirdsubcategory?.id?.toString() : typeof product.thirdsubcategory === 'string' ? product.thirdsubcategory : undefined;
 
-        // Correctly handle the brand array
-        if (Array.isArray(product.brand)) {
-          product.brand.forEach(brandRef => {
-            const brandId = typeof brandRef === 'object' && brandRef !== null ? brandRef.id?.toString() : typeof brandRef === 'string' || typeof brandRef === 'number' ? String(brandRef) : undefined;
-            if (brandId) brandIdsFromProducts.add(brandId);
-          });
-        } else if (product.brand) { // Handle potential single object/ID case if API/type allows
-           const brandId = typeof product.brand === 'object' && product.brand !== null ? product.brand.id?.toString() : typeof product.brand === 'string' || typeof product.brand === 'number' ? String(product.brand) : undefined;
-           if (brandId) brandIdsFromProducts.add(brandId);
-        }
-        
-        const modelId = typeof product.model === 'object' ? product.model?.id?.toString() : typeof product.model === 'string' ? product.model : undefined;
-        const modificationId = typeof product.modification === 'object' ? product.modification?.id?.toString() : typeof product.modification === 'string' ? product.modification : undefined;
-
-        if (categoryId) categoryIdsFromProducts.add(categoryId);
-        if (subcategoryId) subcategoryIdsFromProducts.add(subcategoryId);
-        if (thirdSubcategoryId) thirdSubcategoryIdsFromProducts.add(thirdSubcategoryId);
-        if (modelId) modelIdsFromProducts.add(modelId);
-        if (modificationId) modificationIdsFromProducts.add(modificationId);
+      // Correctly handle the brand array to extract IDs
+      const brandRefs = Array.isArray(product.brand) ? product.brand : (product.brand ? [product.brand] : []);
+      brandRefs.forEach(brandRef => {
+        const brandId = typeof brandRef === 'object' && brandRef !== null ? brandRef.id?.toString() : typeof brandRef === 'string' || typeof brandRef === 'number' ? String(brandRef) : undefined;
+        if (brandId) brandIdsFromProducts.add(brandId);
       });
-    }
+      
+      const modelId = typeof product.model === 'object' ? product.model?.id?.toString() : typeof product.model === 'string' ? product.model : undefined;
+      const modificationId = typeof product.modification === 'object' ? product.modification?.id?.toString() : typeof product.modification === 'string' ? product.modification : undefined;
 
-    // 2. Determine the final filtered lists
-
-    // Categories: Filter by brand products OR show all if no brand selected
-    let finalFilteredCategories = categories;
-    if (filterBrand) {
-      if (cmsProducts.length > 0) {
-         finalFilteredCategories = categories.filter(cat => categoryIdsFromProducts.has(cat.id.toString()));
-      } else {
-         // If brand selected but no products, show no categories (strict filtering)
-         finalFilteredCategories = [];
-      }
-    }
-    setFilteredCategories(finalFilteredCategories);
-
-    // Subcategories: Filter by category selection AND brand products (if applicable)
-    let finalFilteredSubcategories = subcategories;
-    if (filterCategory) {
-       finalFilteredSubcategories = finalFilteredSubcategories.filter(sub => 
-         typeof sub.category === 'object' && sub.category?.slug === filterCategory
-       );
-    }
-    if (filterBrand) {
-       if (cmsProducts.length > 0) {
-          finalFilteredSubcategories = finalFilteredSubcategories.filter(sub => 
-             subcategoryIdsFromProducts.has(sub.id.toString())
-          );
-       } else {
-          finalFilteredSubcategories = []; // Strict filtering
-       }
-    }
-    setFilteredSubcategories(finalFilteredSubcategories);
-
-    // ThirdSubcategories: Filter by subcategory selection AND brand products (if applicable)
-    let finalFilteredThirdSubcategories = thirdSubcategories;
-    if (filterSubcategory) {
-      finalFilteredThirdSubcategories = finalFilteredThirdSubcategories.filter(third => 
-         typeof third.subcategory === 'object' && third.subcategory?.id === filterSubcategory.id
-       );
-    }
-     if (filterBrand) { // Also filter by brand products
-       if (cmsProducts.length > 0) {
-          finalFilteredThirdSubcategories = finalFilteredThirdSubcategories.filter(third => 
-             thirdSubcategoryIdsFromProducts.has(third.id.toString())
-          );
-       } else {
-          finalFilteredThirdSubcategories = []; // Strict filtering
-       }
-     }
-    setFilteredThirdSubcategories(finalFilteredThirdSubcategories);
-
-    // Brands: Filter by taxonomy products OR show all if no taxonomy selected
-    let finalFilteredBrands = brands;
-    if (filterCategory || filterSubcategory || filterThirdSubcategory) {
-       if (cmsProducts.length > 0) {
-          finalFilteredBrands = brands.filter(brand => brandIdsFromProducts.has(brand.id.toString()));
-       } else {
-          // If taxonomy selected but no products, show no brands (strict filtering)
-          finalFilteredBrands = [];
-       }
-    }
-    setFilteredBrands(finalFilteredBrands);
-
-    // Models: Filter first by brand selection, then by available products
-    let finalFilteredModels = models;
-    if (filterBrand) {
-      finalFilteredModels = finalFilteredModels.filter(model => 
-        typeof model.brand === 'object' && model.brand?.slug === filterBrand
-      );
-      // If products are available for the current filters, refine by product models
-      if (cmsProducts.length > 0) {
-         const modelsInProducts = finalFilteredModels.filter(model => 
-            modelIdsFromProducts.has(model.id.toString())
-         );
-         // Only apply product filter if it results in a non-empty list, otherwise keep brand-filtered
-         if (modelsInProducts.length > 0) {
-            finalFilteredModels = modelsInProducts;
-         } else {
-            // If filtering by product results in nothing, it might mean the product fetch is slightly behind
-            // or no products match the *full* filter set. Keep the brand-filtered list.
-            console.log("No models found in current products for selected brand, showing all models for the brand.");
-         }
-      } else if (filterCategory || filterSubcategory || filterThirdSubcategory || filterModel || filterModification || searchQuery) {
-         // If other filters are active but no products found, strictly filter models (show none)
-         finalFilteredModels = [];
-      }
-    }
-    setFilteredModels(finalFilteredModels);
-
-    // Modifications: Filter first by model selection, then by available products
-    let finalFilteredModifications = modifications;
-    if (filterModel) {
-       finalFilteredModifications = finalFilteredModifications.filter(mod => 
-         typeof mod.model === 'object' && mod.model?.slug === filterModel
-       );
-       // If products are available for the current filters, refine by product modifications
-       if (cmsProducts.length > 0) {
-          const modificationsInProducts = finalFilteredModifications.filter(mod => 
-             modificationIdsFromProducts.has(mod.id.toString())
-          );
-          // Only apply product filter if it results in a non-empty list
-          if (modificationsInProducts.length > 0) {
-             finalFilteredModifications = modificationsInProducts;
-          } else {
-             console.log("No modifications found in current products for selected model, showing all modifications for the model.");
-          }
-       } else if (filterCategory || filterSubcategory || filterThirdSubcategory || filterBrand || filterModification || searchQuery) {
-          // If other filters are active but no products found, strictly filter modifications (show none)
-          finalFilteredModifications = [];
-       }
-    }
-    setFilteredModifications(finalFilteredModifications);
-
-    console.log("Updated Filter Options:", {
-       categories: finalFilteredCategories.length,
-       subcategories: finalFilteredSubcategories.length,
-       thirdSubcategories: finalFilteredThirdSubcategories.length,
-       brands: finalFilteredBrands.length,
-       models: finalFilteredModels.length,
-       modifications: finalFilteredModifications.length
+      if (categoryId) categoryIdsFromProducts.add(categoryId);
+      if (subcategoryId) subcategoryIdsFromProducts.add(subcategoryId);
+      if (thirdSubcategoryId) thirdSubcategoryIdsFromProducts.add(thirdSubcategoryId);
+      if (modelId) modelIdsFromProducts.add(modelId);
+      if (modificationId) modificationIdsFromProducts.add(modificationId);
     });
 
-  }, [cmsProducts, filterCategory, filterSubcategory, filterThirdSubcategory, filterBrand, filterModel, filterModification, searchQuery, metadataLoaded, categories, subcategories, thirdSubcategories, brands, models, modifications]);
+    // Initialize final filtered lists
+    let finalFilteredCategories: Category[] = [];
+    let finalFilteredSubcategories: Subcategory[] = [];
+    let finalFilteredThirdSubcategories: ThirdSubcategory[] = [];
+    let finalFilteredBrands: CmsBrand[] = [];
+    let finalFilteredModels: CmsModel[] = [];
+    let finalFilteredModifications: Modification[] = [];
+
+    // 2. Determine the final filtered lists based on search state
+    if (isSearchActive && hasSearchResults) {
+      // --- Search is Active and has Results: Filter options ONLY based on products --- 
+      console.log("[Filter Options Effect] Using SEARCH ACTIVE WITH RESULTS path.");
+      finalFilteredCategories = categories.filter(cat => categoryIdsFromProducts.has(cat.id.toString()));
+      finalFilteredSubcategories = subcategories.filter(sub => subcategoryIdsFromProducts.has(sub.id.toString()));
+      finalFilteredThirdSubcategories = thirdSubcategories.filter(third => thirdSubcategoryIdsFromProducts.has(third.id.toString()));
+      finalFilteredBrands = brands.filter(brand => brandIdsFromProducts.has(brand.id.toString()));
+      finalFilteredModels = models.filter(model => modelIdsFromProducts.has(model.id.toString()));
+      finalFilteredModifications = modifications.filter(mod => modificationIdsFromProducts.has(mod.id.toString()));
+      
+      // Additionally, apply *selected* filters on top of search results
+      if (filterBrand) {
+          finalFilteredModels = finalFilteredModels.filter(model => 
+            typeof model.brand === 'object' && model.brand?.slug === filterBrand
+          );
+          finalFilteredModifications = finalFilteredModifications.filter(mod => modificationIdsFromProducts.has(mod.id.toString())); // Ensure mods are from products
+      }
+      if (filterModel) {
+          finalFilteredModifications = finalFilteredModifications.filter(mod => 
+            typeof mod.model === 'object' && mod.model?.slug === filterModel
+          );
+      }
+       if (filterCategory) {
+          finalFilteredSubcategories = finalFilteredSubcategories.filter(sub => 
+             typeof sub.category === 'object' && sub.category?.slug === filterCategory
+           );
+           finalFilteredThirdSubcategories = finalFilteredThirdSubcategories.filter(third => thirdSubcategoryIdsFromProducts.has(third.id.toString())); // Ensure thirds are from products
+       }
+       if (filterSubcategory) {
+           finalFilteredThirdSubcategories = finalFilteredThirdSubcategories.filter(third => 
+             typeof third.subcategory === 'object' && third.subcategory?.id === filterSubcategory.id
+           );
+       }
+       // Brands/Categories might also need filtering based on selected Category/Brand respectively
+       if (filterCategory) {
+           finalFilteredBrands = finalFilteredBrands.filter(brand => brandIdsFromProducts.has(brand.id.toString())); // Re-filter brands from products matching category
+       }
+       if (filterBrand) {
+           finalFilteredCategories = finalFilteredCategories.filter(cat => categoryIdsFromProducts.has(cat.id.toString())); // Re-filter categories from products matching brand
+       }
+
+    } else if (isSearchActive && !hasSearchResults) {
+      // --- Search is Active but found NO Results: Show NO options ---
+      console.log("[Filter Options Effect] Using SEARCH ACTIVE WITH NO RESULTS path.");
+      finalFilteredCategories = [];
+      finalFilteredSubcategories = [];
+      finalFilteredThirdSubcategories = [];
+      finalFilteredBrands = [];
+      finalFilteredModels = [];
+      finalFilteredModifications = [];
+
+    } else { // Implicitly handles !isSearchActive
+      // --- No Active Search: Use existing cross-filtering logic --- 
+      console.log("[Filter Options Effect] Using CROSS-FILTERING path (no search active).");
+      // Categories: Filter by brand products OR show all if no brand selected
+      finalFilteredCategories = categories;
+      if (filterBrand) {
+        if (hasSearchResults) { // Use hasSearchResults here too
+           finalFilteredCategories = categories.filter(cat => categoryIdsFromProducts.has(cat.id.toString()));
+        } else {
+           // If brand selected but no products (maybe search failed or filters too strict), show no categories
+           finalFilteredCategories = [];
+        }
+      }
+
+      // Subcategories: Filter by category selection AND brand products (if applicable)
+      finalFilteredSubcategories = subcategories;
+      if (filterCategory) {
+         finalFilteredSubcategories = finalFilteredSubcategories.filter(sub => 
+           typeof sub.category === 'object' && sub.category?.slug === filterCategory
+         );
+      }
+      if (filterBrand) {
+         if (hasSearchResults) {
+            finalFilteredSubcategories = finalFilteredSubcategories.filter(sub => 
+               subcategoryIdsFromProducts.has(sub.id.toString())
+            );
+         } else {
+            finalFilteredSubcategories = []; // Strict filtering
+         }
+      }
+
+      // ThirdSubcategories: Filter by subcategory selection AND brand products (if applicable)
+      finalFilteredThirdSubcategories = thirdSubcategories;
+      if (filterSubcategory) {
+        finalFilteredThirdSubcategories = finalFilteredThirdSubcategories.filter(third => 
+           typeof third.subcategory === 'object' && third.subcategory?.id === filterSubcategory.id
+         );
+      }
+       if (filterBrand) { // Also filter by brand products
+         if (hasSearchResults) {
+            finalFilteredThirdSubcategories = finalFilteredThirdSubcategories.filter(third => 
+               thirdSubcategoryIdsFromProducts.has(third.id.toString())
+            );
+         } else {
+            finalFilteredThirdSubcategories = []; // Strict filtering
+         }
+       }
+
+      // Brands: Filter by taxonomy products OR show all if no taxonomy selected
+      finalFilteredBrands = brands;
+      if (filterCategory || filterSubcategory || filterThirdSubcategory) {
+         if (hasSearchResults) {
+            finalFilteredBrands = brands.filter(brand => brandIdsFromProducts.has(brand.id.toString()));
+         } else {
+            // If taxonomy selected but no products, show no brands (strict filtering)
+            finalFilteredBrands = [];
+         }
+      }
+
+      // Models: Filter first by brand selection, then by available products
+      finalFilteredModels = models;
+      if (filterBrand) {
+        finalFilteredModels = finalFilteredModels.filter(model => 
+          typeof model.brand === 'object' && model.brand?.slug === filterBrand
+        );
+        // If products are available for the current filters, refine by product models
+        if (hasSearchResults) {
+           const modelsInProducts = finalFilteredModels.filter(model => 
+              modelIdsFromProducts.has(model.id.toString())
+           );
+           // Only apply product filter if it results in a non-empty list, otherwise keep brand-filtered
+           // This logic might be too complex, maybe stick to brand filter?
+           // Let's simplify: if brand selected, just show models for that brand initially
+           // Product filtering happens implicitly via other filters
+           // NO - Keep the product filtering, but ensure it doesn't break things
+            if (modelsInProducts.length > 0 || !isSearchActive) { // Apply if results or not searching
+               finalFilteredModels = modelsInProducts;
+           } else if (isSearchActive && modelsInProducts.length === 0) {
+              finalFilteredModels = []; // No models from search results match brand
+           } else {
+             console.log("No models found in current products for selected brand, showing all models for the brand (cross-filter mode).");
+           }
+        } else if (filterCategory || filterSubcategory || filterThirdSubcategory || filterModel || filterModification || isSearchActive) {
+           // If other filters active but no products, strictly filter models (show none)
+           // Let's refine: Only show none if *not* just a brand filter is selected
+           if(filterCategory || filterSubcategory || filterThirdSubcategory || filterModel || filterModification || isSearchActive) {
+              finalFilteredModels = [];
+           }
+        }
+      } else { // No brand selected
+         // If taxonomy selected, filter models by products found for that taxonomy
+         if ((filterCategory || filterSubcategory || filterThirdSubcategory) && hasSearchResults) {
+             finalFilteredModels = models.filter(model => modelIdsFromProducts.has(model.id.toString()));
+         } else if (filterCategory || filterSubcategory || filterThirdSubcategory) {
+             finalFilteredModels = []; // Taxonomy selected, no products
+         }
+         // Otherwise (no filters at all), show all models (already initialized)
+      }
+
+      // Modifications: Filter first by model selection, then by available products
+      finalFilteredModifications = modifications;
+      if (filterModel) {
+         finalFilteredModifications = finalFilteredModifications.filter(mod => 
+           typeof mod.model === 'object' && mod.model?.slug === filterModel
+         );
+         // If products are available for the current filters, refine by product modifications
+         if (hasSearchResults) {
+            const modificationsInProducts = finalFilteredModifications.filter(mod => 
+               modificationIdsFromProducts.has(mod.id.toString())
+            );
+           if (modificationsInProducts.length > 0 || !isSearchActive) {
+               finalFilteredModifications = modificationsInProducts;
+           } else if (isSearchActive && modificationsInProducts.length === 0) {
+              finalFilteredModifications = []; // No mods from search results match model
+           } else {
+              console.log("No modifications found in current products for selected model, showing all modifications for the model (cross-filter mode).");
+           }
+         } else if (filterCategory || filterSubcategory || filterThirdSubcategory || filterBrand || filterModification || isSearchActive) {
+           if(filterCategory || filterSubcategory || filterThirdSubcategory || filterBrand || filterModification || isSearchActive) {
+            // If other filters active but no products, strictly filter modifications (show none)
+             finalFilteredModifications = [];
+           }
+         }
+      } else { // No model selected
+          // If brand selected, filter modifications by products for that brand
+          if (filterBrand && hasSearchResults) {
+              finalFilteredModifications = modifications.filter(mod => modificationIdsFromProducts.has(mod.id.toString()));
+          } else if (filterBrand) {
+              finalFilteredModifications = []; // Brand selected, no products
+          }
+          // Further filter by taxonomy if selected
+          if ((filterCategory || filterSubcategory || filterThirdSubcategory) && hasSearchResults) {
+              finalFilteredModifications = finalFilteredModifications.filter(mod => modificationIdsFromProducts.has(mod.id.toString()));
+          } else if (filterCategory || filterSubcategory || filterThirdSubcategory) {
+              finalFilteredModifications = []; // Taxonomy selected, no products
+          }
+      }
+    }
+
+    // 3. Update the state for filtered options
+    console.log(`[Filter Options Effect] Final counts: Cat=${finalFilteredCategories.length}, Sub=${finalFilteredSubcategories.length}, Third=${finalFilteredThirdSubcategories.length}, Brand=${finalFilteredBrands.length}, Model=${finalFilteredModels.length}, Mod=${finalFilteredModifications.length}`);
+    setFilteredCategories(finalFilteredCategories);
+    setFilteredSubcategories(finalFilteredSubcategories);
+    setFilteredThirdSubcategories(finalFilteredThirdSubcategories);
+    setFilteredBrands(finalFilteredBrands);
+    setFilteredModels(finalFilteredModels);
+    setFilteredModifications(finalFilteredModifications);
+
+  }, [cmsProducts, filterCategory, filterSubcategory, filterThirdSubcategory, filterBrand, filterModel, filterModification, searchParams, metadataLoaded, categories, subcategories, thirdSubcategories, brands, models, modifications]);
 
   // Fetch products based on active filters
   const fetchProducts = useCallback(async () => {
@@ -529,6 +621,19 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     if (!metadataLoaded) return;
     
     console.log("Effect 1: Parsing URL params", searchParams.toString());
+    
+    const currentSearchQuery = searchParams.get('search') || ''; // Get current search, default to empty string
+    const previousSearchQuery = prevSearchQueryRef.current;
+    
+    // Check if search query itself has changed
+    const hasSearchQueryChanged = currentSearchQuery !== previousSearchQuery;
+    
+    if (hasSearchQueryChanged) {
+        console.log(`Effect 1: Search query changed from '${previousSearchQuery}' to '${currentSearchQuery}'. Clearing other filters.`);
+        // Update the ref for the next render AFTER the comparison
+        prevSearchQueryRef.current = currentSearchQuery;
+    }
+
     // Start with defaults
     let newCategory = initialCategory || null;
     let newSubcategory: Subcategory | null = null;
@@ -536,70 +641,87 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     let newBrand: string | null = null;
     let newModel: string | null = null;
     let newModification: string | null = null;
-    let searchActive = false;
-    
-    if (searchParams) {
-      const urlCategory = searchParams.get('category');
-      const urlSubcategory = searchParams.get('subcategory') || searchParams.get('subcat');
-      const urlThirdSubcategory = searchParams.get('thirdsubcategory') || searchParams.get('thirdsubcat');
-      const urlBrand = searchParams.get('brand');
-      const urlModel = searchParams.get('model');
-      const urlModification = searchParams.get('modification') || searchParams.get('mod');
-      const urlSearchQuery = searchParams.get('search'); // Use a different var name to avoid conflict with component scope searchQuery
-      
-      if (urlCategory || urlSubcategory || urlThirdSubcategory || urlBrand || urlModel || urlModification || urlSearchQuery) {
-        searchActive = true;
-        if (urlCategory) newCategory = urlCategory;
-        if (urlBrand) newBrand = urlBrand;
-        if (urlModel) newModel = urlModel;
-        if (urlModification) newModification = urlModification;
+    let searchActive = !!currentSearchQuery; // Active if there's a search query
+
+    // If search query changed, ignore other URL params for this cycle
+    if (!hasSearchQueryChanged && searchParams) {
+        const urlCategory = searchParams.get('category');
+        const urlSubcategory = searchParams.get('subcategory') || searchParams.get('subcat');
+        const urlThirdSubcategory = searchParams.get('thirdsubcategory') || searchParams.get('thirdsubcat');
+        const urlBrand = searchParams.get('brand');
+        const urlModel = searchParams.get('model');
+        const urlModification = searchParams.get('modification') || searchParams.get('mod');
+        // currentSearchQuery already handles the search part
         
-        // Find subcategory by slug if specified
-        if (urlSubcategory) {
-          const matchedSubcategory = subcategories.find(sub => sub.attributes.slug === urlSubcategory);
-          if (matchedSubcategory) newSubcategory = matchedSubcategory;
+        // Only consider filters active if search didn't just change
+        if (urlCategory || urlSubcategory || urlThirdSubcategory || urlBrand || urlModel || urlModification) {
+          searchActive = true; // Keep active if any filter is present
+          if (urlCategory) newCategory = urlCategory;
+          if (urlBrand) newBrand = urlBrand;
+          if (urlModel) newModel = urlModel;
+          if (urlModification) newModification = urlModification;
+          
+          // Find subcategory by slug if specified
+          if (urlSubcategory) {
+            const matchedSubcategory = subcategories.find(sub => sub.attributes.slug === urlSubcategory);
+            if (matchedSubcategory) newSubcategory = matchedSubcategory;
+          }
+          
+          // Find third subcategory by slug if specified
+          if (urlThirdSubcategory) {
+            const matchedThirdSubcategory = thirdSubcategories.find(sub => sub.attributes.slug === urlThirdSubcategory);
+            if (matchedThirdSubcategory) newThirdSubcategory = matchedThirdSubcategory;
+          }
+          
+          console.log("Effect 1: Applying non-search params from URL", { newCategory, newSubcategory, newThirdSubcategory, newBrand, newModel, newModification });
         }
-        
-        // Find third subcategory by slug if specified
-        if (urlThirdSubcategory) {
-          const matchedThirdSubcategory = thirdSubcategories.find(sub => sub.attributes.slug === urlThirdSubcategory);
-          if (matchedThirdSubcategory) newThirdSubcategory = matchedThirdSubcategory;
-        }
-        
-        console.log("Effect 1: Applying params from URL", { newCategory, newSubcategory, newThirdSubcategory, newBrand, newModel, newModification });
-      }
-    }
-    
-    // If no search parameters but we have a path category (e.g., /catalog/engines)
-    if (!searchActive && !initialCategory) {
-      const pathParts = pathname.split("/");
-      if (pathParts.length >= 3 && pathParts[1] === 'catalog') {
-        const categorySlug = pathParts[2];
-        if (categorySlug) {
-          const category = categories.find(cat => cat.slug === categorySlug);
-          if (category) {
-            newCategory = category.slug;
-            console.log("Path category found:", category.slug);
+    } else if (!hasSearchQueryChanged) { 
+      // Handle path category only if search didn't change
+      // If no search parameters but we have a path category (e.g., /catalog/engines)
+      if (!searchActive && !initialCategory) {
+        const pathParts = pathname.split("/");
+        if (pathParts.length >= 3 && pathParts[1] === 'catalog') {
+          const categorySlug = pathParts[2];
+          if (categorySlug) {
+            const category = categories.find(cat => cat.slug === categorySlug);
+            if (category) {
+              newCategory = category.slug;
+              searchActive = true; // Path category implies active filter state
+              console.log("Path category found:", category.slug);
+            }
           }
         }
       }
     }
     
-    // Apply the determined filters (ONLY to filter... state)
+    // Apply the determined filters (will be defaults/cleared if search changed)
     setFilterCategory(newCategory);
     setFilterSubcategory(newSubcategory);
     setFilterThirdSubcategory(newThirdSubcategory);
     setFilterBrand(newBrand);
     setFilterModel(newModel);
     setFilterModification(newModification);
-    setHasActiveSearch(searchActive);
+    setHasActiveSearch(searchActive); // Based on whether ANY filter or search is active
     
-    setCurrentPage(1);
+    // Always reset to page 1 when URL parameters change significantly (including search)
+    setCurrentPage(1); 
 
-    setIsInitialSyncComplete(true); 
-    console.log("Effect 1: Initial sync complete");
+    // Only set initial sync complete after the first run potentially triggered by metadata load
+    if (!isInitialSyncComplete) {
+       setIsInitialSyncComplete(true); 
+       console.log("Effect 1: Initial sync complete flag set.");
+       // Update the ref with initial search param on first run if needed
+       if (previousSearchQuery === null) { // Only if it hasn't been set yet
+           prevSearchQueryRef.current = currentSearchQuery;
+       }
+    } else if (hasSearchQueryChanged) {
+        // If search changed AFTER initial sync, log it.
+        console.log("Effect 1: State updated due to search query change.");
+    } else {
+        console.log("Effect 1: State sync from URL complete (no search change).");
+    }
     
-  }, [metadataLoaded, searchParams, pathname, initialCategory, categories, subcategories, thirdSubcategories]);
+  }, [metadataLoaded, searchParams, pathname, initialCategory, categories, subcategories, thirdSubcategories]); // REMOVE isInitialSyncComplete from dependencies
 
   // Use a separate useEffect to fetch products when filters change (Effect 3)
   useEffect(() => {
@@ -633,7 +755,7 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
 
     // console.log("Effect 2: Checking if URL needs update based on state");
     const newQueryParams = new URLSearchParams();
-    const currentSearchFromUrl = searchParams.get('search'); 
+    // const currentSearchFromUrl = searchParams.get('search'); // REMOVED: Don't read directly
 
     // Build query params from the current FILTER state
     if (filterCategory) newQueryParams.set('category', filterCategory);
@@ -657,13 +779,14 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     if (filterModel) newQueryParams.set('model', filterModel);
     if (filterModification) newQueryParams.set('modification', filterModification);
     
-    // ALSO include the search parameter from the current URL
-    if (currentSearchFromUrl) {
-      newQueryParams.set('search', currentSearchFromUrl);
+    // ALSO include the search parameter FROM COMPONENT STATE if it exists
+    if (searchQuery) { // Use component-level searchQuery state
+      newQueryParams.set('search', searchQuery);
     }
 
     const newQueryString = newQueryParams.toString();
-    const currentQueryString = searchParams.toString(); 
+    const freshSearchParams = new URLSearchParams(window.location.search);
+    const currentQueryString = freshSearchParams.toString();
 
     if (newQueryString !== currentQueryString) {
       // console.log(`Effect 2: Updating URL. Current='${currentQueryString}', New='${newQueryString}'`);
@@ -673,18 +796,19 @@ const Catalog: React.FC<CatalogProps> = ({ initialCategory }) => {
     }
 
   }, [
-    // Depend on filter states AND the sync flag
+    // Depend ONLY on filter states AND the sync flag
     filterCategory, 
     filterSubcategory, 
     filterThirdSubcategory, 
     filterBrand, 
     filterModel, 
     filterModification, 
-    isInitialSyncComplete, // Add flag dependency
+    // REMOVE searchQuery state dependency
+    isInitialSyncComplete, 
     // Keep others needed for the effect execution
     metadataLoaded, 
     router,         
-    pathname
+    pathname,
   ]);
 
   // Generate select options for UI

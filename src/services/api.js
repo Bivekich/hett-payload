@@ -25,7 +25,7 @@ export const getBanners = async () => {
 
 export const getAboutData = async () => {
   try {
-    const response = await fetch(`${API_URL}/api/about?depth=2`, {
+    const response = await fetch(`${API_URL}/api/about?depth=3`, {
       headers: {
         ...(API_TOKEN ? { Authorization: `Bearer ${API_TOKEN}` } : {}),
       },

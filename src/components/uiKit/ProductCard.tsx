@@ -50,19 +50,16 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({
   const displayBrand = Array.isArray(brand) ? brand.join(", ") : brand;
 
   return (
-    <div className="flex justify-between w-full text-sm font-[Roboto_Condensed]">
-      <div className="flex-1 shrink basis-0 text-[#181818]">
-        OEM №<br />
-        Марка авто
-        <br />
-        Модель
+    <div className="grid grid-cols-2 gap-2 w-full text-sm font-[Roboto_Condensed]">
+      <div className="text-[#181818]">
+        <div>OEM №</div>
+        <div>Марка авто</div>
+        <div>Модель</div>
       </div>
-      <div className="flex-1 shrink basis-0 text-[#181818]">
-        {oemNumber}
-        <br />
-        {displayBrand}
-        <br />
-        {model}
+      <div className="text-[#181818]">
+        <div className="overflow-hidden whitespace-nowrap text-ellipsis">{oemNumber}</div>
+        <div className="overflow-hidden whitespace-nowrap text-ellipsis">{displayBrand}</div>
+        <div className="overflow-hidden whitespace-nowrap text-ellipsis">{model}</div>
       </div>
     </div>
   );
@@ -126,7 +123,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       </div>
       <div className="p-6 flex flex-col gap-6 flex-grow">
         <div className="flex flex-col gap-1">
-          <h3 className="text-base font-extrabold font-[Roboto_Condensed] text-[#181818] line-clamp-2">
+          <h3 className="text-base font-extrabold font-[Roboto_Condensed] text-[#181818] line-clamp-2 min-h-[48px]">
             {name}
           </h3>
           <div className="text-xs text-[#8898A4] my-2 font-[Roboto_Condensed]">

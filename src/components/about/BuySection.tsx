@@ -116,6 +116,7 @@ const BuySection: React.FC<BuySectionProps> = ({
     website: distributor?.website || "protekauto.ru",
     websiteUrl: distributor?.websiteUrl || "https://protekauto.ru",
     image: distributor?.image,
+    logo: distributor?.logo,
     buttonText: distributor?.buttonText || "Перейти на сайт",
     buttonUrl: distributor?.buttonUrl || "https://protekauto.ru",
     features: distributor?.features || [],
