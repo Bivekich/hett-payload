@@ -7,12 +7,30 @@
 - Docker Compose
 
 ### Настройка переменных окружения
-1. Скопируйте файл `sample.env` в `.env` и настройте переменные окружения:
+1. Создайте файл `.env` с необходимыми переменными окружения:
    ```
-   cp sample.env .env
+   # Настройки Next.js
+   NEXT_PUBLIC_PAYLOAD_API_URL=http://cms:3001
+   NEXT_PUBLIC_PAYLOAD_API_TOKEN=your_api_token_here
+   NEXT_PUBLIC_CMS_URL=http://cms:3001
+   
+   # Настройки уведомлений через Telegram
+   NEXT_PUBLIC_TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+   NEXT_PUBLIC_TELEGRAM_CHAT_ID=your_telegram_chat_id_here
+   
+   # Настройки Email
+   NEXT_PUBLIC_EMAIL_HOST=smtp.example.com
+   NEXT_PUBLIC_EMAIL_PORT=587
+   NEXT_PUBLIC_EMAIL_USER=user@example.com
+   NEXT_PUBLIC_EMAIL_PASS=your_email_password_here
+   NEXT_PUBLIC_EMAIL_FROM=Hett Automotive <noreply@hettauto.com>
+   NEXT_PUBLIC_EMAIL_TO=info@hettauto.com
+   
+   # Настройки сервера
+   PORT=3001
+   NODE_ENV=production
    ```
 2. Отредактируйте файл `.env` и заполните все необходимые параметры.
-3. При необходимости отредактируйте файл `stack.env` для настройки переменных Docker.
 
 ### Сборка и запуск
 1. Соберите Docker-образ:
@@ -34,7 +52,7 @@
 
 ### Доступ к приложению
 После запуска приложение будет доступно по адресу:
-- Frontend: `http://localhost:3001`
+- Frontend: `http://localhost:3008`
 
 ## Структура проекта
 - `/public` - статические файлы
