@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        NODE_VERSION: ${NODE_VERSION}
+        NODE_VERSION: ${NODE_VERSION:-20-alpine}
         NEXT_PUBLIC_PAYLOAD_API_URL: ${NEXT_PUBLIC_PAYLOAD_API_URL}
         NEXT_PUBLIC_PAYLOAD_API_TOKEN: ${NEXT_PUBLIC_PAYLOAD_API_TOKEN}
         NEXT_PUBLIC_CMS_URL: ${NEXT_PUBLIC_CMS_URL}
@@ -18,13 +18,13 @@ services:
         NEXT_PUBLIC_EMAIL_PASS: ${NEXT_PUBLIC_EMAIL_PASS}
         NEXT_PUBLIC_EMAIL_FROM: ${NEXT_PUBLIC_EMAIL_FROM}
         NEXT_PUBLIC_EMAIL_TO: ${NEXT_PUBLIC_EMAIL_TO}
-    image: hett-frontend:${TAG}
+    image: hett-frontend:latest
     restart: unless-stopped
     ports:
       - "3008:3001"
     environment:
-      - NODE_ENV=${NODE_ENV}
-      - PORT=${PORT}
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${PORT:-3001}
       - NEXT_PUBLIC_PAYLOAD_API_URL=${NEXT_PUBLIC_PAYLOAD_API_URL}
       - NEXT_PUBLIC_PAYLOAD_API_TOKEN=${NEXT_PUBLIC_PAYLOAD_API_TOKEN}
       - NEXT_PUBLIC_CMS_URL=${NEXT_PUBLIC_CMS_URL}

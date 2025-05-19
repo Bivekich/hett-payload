@@ -1,4 +1,4 @@
-FROM node:${NODE_VERSION} AS base
+FROM node:20-alpine AS base
 
 # Установка зависимостей
 FROM base AS deps
